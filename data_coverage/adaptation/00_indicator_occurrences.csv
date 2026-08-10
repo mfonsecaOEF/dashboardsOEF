@@ -1,0 +1,143 @@
+indicator_id,indicator_name,sector,sector_code,climatic_risk,hazard_code,risk_component,component_code,index_raw,attribute,kind
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Water Resources,WR,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) Present,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Water Resources,WR,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2030,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Water Resources,WR,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2050,Duration/Severity/Frequency,Bioclimatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Water Resources,WR,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) Present,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Water Resources,WR,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2030,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Water Resources,WR,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2050,Duration,Climatic
+CCRA-019,Inadequate water access,Water Resources,WR,Droughts,DR,Vulnerability,V,Inadequate water access,Adaptive capacity,Socioeconomic
+CCRA-020,Income,Water Resources,WR,Droughts,DR,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-041,Water security index,Water Resources,WR,Droughts,DR,Vulnerability,V,Water security index,Sensitivity,Socioeconomic
+CCRA-028,Population density,Water Resources,WR,Droughts,DR,Exposure,E,Population density,People exposure,Demographic
+CCRA-015,Health and basic services access,Water Resources,WR,Droughts,DR,Exposure,E,Health and basic services access,People exposure,Socioeconomic
+CCRA-023,Landslide Threat Index,Hydrogeological Disasters,HD,Landslides,LS,Hazard,H,Landslide Threat Index Present,Susceptibility,Bioclimatic
+CCRA-023,Landslide Threat Index,Hydrogeological Disasters,HD,Landslides,LS,Hazard,H,Landslide Threat Index 2030,Susceptibility,Bioclimatic
+CCRA-023,Landslide Threat Index,Hydrogeological Disasters,HD,Landslides,LS,Hazard,H,Landslide Threat Index 2050,Susceptibility,Bioclimatic
+CCRA-020,Income,Hydrogeological Disasters,HD,Landslides,LS,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-001,Age Distribution,Hydrogeological Disasters,HD,Landslides,LS,Vulnerability,V,Age Distribution,Sensitivity,Socioeconomic
+CCRA-027,Natural vegetation cover,Hydrogeological Disasters,HD,Landslides,LS,Vulnerability,V,Natural vegetation cover,Exposure,Physical
+CCRA-028,Population density,Hydrogeological Disasters,HD,Landslides,LS,Exposure,E,Population density,People exposure,Demographic
+CCRA-017,Households in hazard-prone areas,Hydrogeological Disasters,HD,Landslides,LS,Exposure,E,Households in hazard-prone areas,Exposure,Physical
+CCRA-011,Flood Threat Index,Hydrogeological Disasters,HD,Floods,FL,Hazard,H,Flood Threat Index,Susceptibility,Bioclimatic
+CCRA-011,Flood Threat Index,Hydrogeological Disasters,HD,Floods,FL,Hazard,H,Flood Threat Index 2030,Susceptibility,Bioclimatic
+CCRA-011,Flood Threat Index,Hydrogeological Disasters,HD,Floods,FL,Hazard,H,Flood Threat Index 2050,Susceptibility,Bioclimatic
+CCRA-020,Income,Hydrogeological Disasters,HD,Floods,FL,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-001,Age Distribution,Hydrogeological Disasters,HD,Floods,FL,Vulnerability,V,Age Distribution,Sensitivity,Socioeconomic
+CCRA-039,Urban stormwater drainage coverage,Hydrogeological Disasters,HD,Floods,FL,Vulnerability,V,Urban stormwater drainage coverage,Adaptive capacity,Socioeconomic
+CCRA-028,Population density,Hydrogeological Disasters,HD,Floods,FL,Exposure,E,Population density,People exposure,Demographic
+CCRA-017,Households in hazard-prone areas,Hydrogeological Disasters,HD,Floods,FL,Exposure,E,Households in hazard-prone areas,People exposure,Socioeconomic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Energy Security,ES,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) Present,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Energy Security,ES,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2030,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Energy Security,ES,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2050,Duration/Severity/Frequency,Bioclimatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Energy Security,ES,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) Present,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Energy Security,ES,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2030,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Energy Security,ES,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2050,Duration,Climatic
+CCRA-009,Electricity consumption,Energy Security,ES,Droughts,DR,Vulnerability,V,Electricity consumption,Sensitivity,Socioeconomic
+CCRA-020,Income,Energy Security,ES,Droughts,DR,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-010,Energy poverty,Energy Security,ES,Droughts,DR,Vulnerability,V,Energy poverty,Sensitivity,Socioeconomic
+CCRA-028,Population density,Energy Security,ES,Droughts,DR,Exposure,E,Population density,People exposure,Demographic
+CCRA-030,Power generation facilities,Energy Security,ES,Droughts,DR,Exposure,E,Power generation facilities,Infrastructure exposure,Infrastructure
+CCRA-026,Maximum temperature,Energy Security,ES,Heatwaves,HW,Hazard,H,Maximum temperature Present,Intensity,Climatic
+CCRA-026,Maximum temperature,Energy Security,ES,Heatwaves,HW,Hazard,H,Maximum temperature 2030,Intensity,Climatic
+CCRA-026,Maximum temperature,Energy Security,ES,Heatwaves,HW,Hazard,H,Maximum temperature 2050,Intensity,Climatic
+CCRA-009,Electricity consumption,Energy Security,ES,Heatwaves,HW,Vulnerability,V,Electricity consumption,Sensitivity,Socioeconomic
+CCRA-020,Income,Energy Security,ES,Heatwaves,HW,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-010,Energy poverty,Energy Security,ES,Heatwaves,HW,Vulnerability,V,Energy poverty,Sensitivity,Socioeconomic
+CCRA-028,Population density,Energy Security,ES,Heatwaves,HW,Exposure,E,Population density,People exposure,Demographic
+CCRA-030,Power generation facilities,Energy Security,ES,Heatwaves,HW,Exposure,E,Power generation facilities,Infrastructure exposure,Infrastructure
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Food Security,FS,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) Present,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Food Security,FS,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2030,Duration/Severity/Frequency,Bioclimatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Food Security,FS,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2050,Duration/Severity/Frequency,Bioclimatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Food Security,FS,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) Present,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Food Security,FS,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2030,Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Food Security,FS,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD) 2050,Duration,Climatic
+CCRA-020,Income,Food Security,FS,Droughts,DR,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-012,Food production and marketing,Food Security,FS,Droughts,DR,Vulnerability,V,Food production and marketing,Sensitivity,Socioeconomic
+CCRA-008,Dependence on large-scale irrigation,Food Security,FS,Droughts,DR,Vulnerability,V,Dependence on large-scale irrigation,Sensitivity,Socioeconomic
+CCRA-002,Agricultural GDP share,Food Security,FS,Droughts,DR,Exposure,E,Agricultural GDP share,Exposure,Agriculture
+CCRA-028,Population density,Food Security,FS,Droughts,DR,Exposure,E,Population density,People exposure,Demographic
+CCRA-004,Agricultural land area,Food Security,FS,Droughts,DR,Exposure,E,Agricultural land area,Exposure,Agriculture
+CCRA-003,Agricultural establishment density,Food Security,FS,Droughts,DR,Exposure,E,Agricultural establishment density,Exposure,Agriculture
+CCRA-015,Health and basic services access,Food Security,FS,Droughts,DR,Exposure,E,Health and basic services access,People exposure,Socioeconomic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Food Security,FS,Floods,FL,Hazard,H,Maximum Precipitation 5 days (Rx5day),Intensity,Climatic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Food Security,FS,Floods,FL,Hazard,H,Maximum Precipitation 5 days (Rx5day) 2030,Intensity,Climatic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Food Security,FS,Floods,FL,Hazard,H,Maximum Precipitation 5 days (Rx5day) 2050,Intensity,Climatic
+CCRA-037,Total precipitation,Food Security,FS,Floods,FL,Hazard,H,Total precipitation Present,Intensity,Climatic
+CCRA-037,Total precipitation,Food Security,FS,Floods,FL,Hazard,H,Total precipitation 2030,Intensity,Climatic
+CCRA-037,Total precipitation,Food Security,FS,Floods,FL,Hazard,H,Total precipitation 2050,Intensity,Climatic
+CCRA-020,Income,Food Security,FS,Floods,FL,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-012,Food production and marketing,Food Security,FS,Floods,FL,Vulnerability,V,Food production and marketing,Sensitivity,Agriculture
+CCRA-002,Agricultural GDP share,Food Security,FS,Floods,FL,Exposure,E,Agricultural GDP share,Exposure,Agriculture
+CCRA-028,Population density,Food Security,FS,Floods,FL,Exposure,E,Population density,People exposure,Demographic
+CCRA-004,Agricultural land area,Food Security,FS,Floods,FL,Exposure,E,Agricultural land area,Exposure,Agriculture
+CCRA-003,Agricultural establishment density,Food Security,FS,Floods,FL,Exposure,E,Agricultural establishment density,Exposure,Agriculture
+CCRA-015,Health and basic services access,Food Security,FS,Floods,FL,Exposure,E,Health and basic services access,People exposure,Socioeconomic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Biodiversity,BD,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI),Duration/Severity/Frequency,Climatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Biodiversity,BD,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2030,Duration/Severity/Frequency,Climatic
+CCRA-036,Standardized Precipitation Evapotranspiration Index (SPEI),Biodiversity,BD,Droughts,DR,Hazard,H,Standardized Precipitation Evapotranspiration Index (SPEI) 2050,Duration/Severity/Frequency,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Biodiversity,BD,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days (CDD),Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Biodiversity,BD,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days 2030 (CDD),Duration,Climatic
+CCRA-024,Maximum Consecutive Dry Days (CDD),Biodiversity,BD,Droughts,DR,Hazard,H,Maximum Consecutive Dry Days 2050 (CDD),Duration,Climatic
+CCRA-006,Biodiversity Intactness Index (BII),Biodiversity,BD,Droughts,DR,Vulnerability,V,Biodiversity Intactness Index (BII),Sensitivity,Biological
+CCRA-005,Areas of global conservation value,Biodiversity,BD,Droughts,DR,Vulnerability,V,Areas of global conservation value,Sensitivity,Biological
+CCRA-031,Protected areas,Biodiversity,BD,Droughts,DR,Exposure,E,Protected areas,Exposure,Physical
+CCRA-027,Natural vegetation cover,Biodiversity,BD,Droughts,DR,Exposure,E,Natural vegetation cover,Exposure,Physical
+CCRA-026,Maximum temperature,Biodiversity,BD,Heatwaves,HW,Hazard,H,Maximum temperature Present,Intensity,Climatic
+CCRA-026,Maximum temperature,Biodiversity,BD,Heatwaves,HW,Hazard,H,Maximum temperature 2030,Intensity,Climatic
+CCRA-026,Maximum temperature,Biodiversity,BD,Heatwaves,HW,Hazard,H,Maximum temperature 2050,Intensity,Climatic
+CCRA-006,Biodiversity Intactness Index (BII),Biodiversity,BD,Heatwaves,HW,Vulnerability,V,Biodiversity Intactness Index (BII),Sensitivity,Biological
+CCRA-005,Areas of global conservation value,Biodiversity,BD,Heatwaves,HW,Vulnerability,V,Areas of global conservation value,Sensitivity,Biological
+CCRA-031,Protected areas,Biodiversity,BD,Heatwaves,HW,Exposure,E,Protected areas,Exposure,Physical
+CCRA-027,Natural vegetation cover,Biodiversity,BD,Heatwaves,HW,Exposure,E,Natural vegetation cover,Exposure,Physical
+CCRA-026,Maximum temperature,Public Health,PH,Diseases,DI,Hazard,H,Mean maximum temperature (present / 2030 / 2050),Intensity,Bioclimatic
+CCRA-033,Relative humidity,Public Health,PH,Diseases,DI,Hazard,H,Relative humidity (present / 2030 / 2050),Intensity,Bioclimatic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Public Health,PH,Diseases,DI,Hazard,H,Maximum 5-day precipitation Rx5day (present / 2030 / 2050),Intensity,Bioclimatic
+CCRA-007,Confirmed disease cases,Public Health,PH,Diseases,DI,Vulnerability,V,Confirmed disease cases,Sensitivity,Socioeconomic
+CCRA-016,Health facility density,Public Health,PH,Diseases,DI,Vulnerability,V,Health facility density,Sensitivity,Socioeconomic
+CCRA-018,Inadequate Sanitation,Public Health,PH,Diseases,DI,Vulnerability,V,Inadequate Sanitation,Sensitivity,Socioeconomic
+CCRA-019,Inadequate water access,Public Health,PH,Diseases,DI,Vulnerability,V,Inadequate water access,Sensitivity,Socioeconomic
+CCRA-020,Income,Public Health,PH,Diseases,DI,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-001,Age Distribution,Public Health,PH,Diseases,DI,Vulnerability,V,Age Distribution,Sensitivity,Demographic
+CCRA-040,Waste Collection,Public Health,PH,Diseases,DI,Vulnerability,V,Waste Collection,Sensitivity,Socioeconomic
+CCRA-014,Forest loss,Public Health,PH,Diseases,DI,Exposure,E,Forest loss,Exposure,Physical
+CCRA-028,Population density,Public Health,PH,Diseases,DI,Exposure,E,Population density,People exposure,Demographic
+CCRA-015,Health and basic services access,Public Health,PH,Diseases,DI,Exposure,E,Health and basic services access,People exposure,Socioeconomic
+CCRA-026,Maximum temperature,Public Health,PH,Heatwaves,HW,Hazard,H,Maximum temperature Present,Intensity,Climatic
+CCRA-026,Maximum temperature,Public Health,PH,Heatwaves,HW,Hazard,H,Maximum temperature 2030,Intensity,Climatic
+CCRA-026,Maximum temperature,Public Health,PH,Heatwaves,HW,Hazard,H,Maximum temperature 2050,Intensity,Climatic
+CCRA-016,Health facility density,Public Health,PH,Heatwaves,HW,Vulnerability,V,Health facility density,Sensitivity,Socioeconomic
+CCRA-020,Income,Public Health,PH,Heatwaves,HW,Vulnerability,V,Income,Sensitivity,Socioeconomic
+CCRA-001,Age Distribution,Public Health,PH,Heatwaves,HW,Vulnerability,V,Age Distribution,Sensitivity,Socioeconomic
+CCRA-028,Population density,Public Health,PH,Heatwaves,HW,Exposure,E,Population density,People exposure,Demographic
+CCRA-015,Health and basic services access,Public Health,PH,Heatwaves,HW,Exposure,E,Health and basic services access,People exposure,Socioeconomic
+CCRA-035,Sea Level change,Infrastructures,IN,Sea level rise,SLR,Hazard,H,Sea Level change (present),Intensity,Climatic
+CCRA-035,Sea Level change,Infrastructures,IN,Sea level rise,SLR,Hazard,H,Sea Level change (2030),Intensity,Climatic
+CCRA-035,Sea Level change,Infrastructures,IN,Sea level rise,SLR,Hazard,H,Sea Level change (2050),Intensity,Climatic
+CCRA-021,Industrial GDP share,Infrastructures,IN,Sea level rise,SLR,Vulnerability,V,Industrial GDP share,Adaptive capacity,Economic
+CCRA-029,Port infrastructures,Infrastructures,IN,Sea level rise,SLR,Exposure,E,Port infrastructures,Infrastructure exposure,Physical
+CCRA-028,Population density,Infrastructures,IN,Sea level rise,SLR,Exposure,E,Population density,People exposure,Demographic
+CCRA-038,Urban infrastructure social vulnerability,Infrastructures,IN,Sea level rise,SLR,Exposure,E,Urban infrastructure social vulnerability,Infrastructure exposure,Physical
+CCRA-023,Landslide Threat Index,Infrastructures,IN,Landslides,LS,Hazard,H,Landslide Threat Index Present,Susceptibility,Bioclimatic
+CCRA-023,Landslide Threat Index,Infrastructures,IN,Landslides,LS,Hazard,H,Landslide Threat Index 2030,Susceptibility,Bioclimatic
+CCRA-023,Landslide Threat Index,Infrastructures,IN,Landslides,LS,Hazard,H,Landslide Threat Index 2050,Susceptibility,Bioclimatic
+CCRA-022,Landslide Susceptibility,Infrastructures,IN,Landslides,LS,Vulnerability,V,Landslide Susceptibility,Sensitivity,Physical
+CCRA-021,Industrial GDP share,Infrastructures,IN,Landslides,LS,Vulnerability,V,Industrial GDP share,Adaptive capacity,Economic
+CCRA-034,Road density,Infrastructures,IN,Landslides,LS,Exposure,E,Road density,Infrastructure exposure,Physical
+CCRA-032,Railroad density,Infrastructures,IN,Landslides,LS,Exposure,E,Railroad density,Infrastructure exposure,Physical
+CCRA-038,Urban infrastructure social vulnerability,Infrastructures,IN,Landslides,LS,Exposure,E,Urban infrastructure social vulnerability,Infrastructure exposure,Physical
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Infrastructures,IN,Erosions,ER,Hazard,H,Maximum Precipitation 5 days present (Rx5day),Intensity,Climatic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Infrastructures,IN,Erosions,ER,Hazard,H,Maximum Precipitation 5 days (Rx5day) 2030,Intensity,Climatic
+CCRA-025,Maximum Precipitation 5 days (Rx5day),Infrastructures,IN,Erosions,ER,Hazard,H,Maximum Precipitation 5 days (Rx5day) 2050,Intensity,Climatic
+CCRA-013,Forest cover,Infrastructures,IN,Erosions,ER,Vulnerability,V,Forest cover,Sensitivity,Physical
+CCRA-021,Industrial GDP share,Infrastructures,IN,Erosions,ER,Vulnerability,V,Industrial GDP share,Adaptive capacity,Economic
+CCRA-034,Road density,Infrastructures,IN,Erosions,ER,Exposure,E,Road density,Infrastructure exposure,Physical
+CCRA-032,Railroad density,Infrastructures,IN,Erosions,ER,Exposure,E,Railroad density,Infrastructure exposure,Physical
+CCRA-038,Urban infrastructure social vulnerability,Infrastructures,IN,Erosions,ER,Exposure,E,Urban infrastructure social vulnerability,Infrastructure exposure,Physical
+CCRA-026,Maximum temperature,Infrastructures,IN,Heatwave,HW,Hazard,H,Maximum temperature Present,Intensity,Climatic
+CCRA-026,Maximum temperature,Infrastructures,IN,Heatwave,HW,Hazard,H,Maximum temperature 2030,Intensity,Climatic
+CCRA-026,Maximum temperature,Infrastructures,IN,Heatwave,HW,Hazard,H,Maximum temperature 2050,Intensity,Climatic
+CCRA-021,Industrial GDP share,Infrastructures,IN,Heatwave,HW,Vulnerability,V,Industrial GDP share,Adaptive capacity,Economic
+CCRA-013,Forest cover,Infrastructures,IN,Heatwave,HW,Vulnerability,V,Forest cover,Sensitivity,Physical
+CCRA-034,Road density,Infrastructures,IN,Heatwave,HW,Exposure,E,Road density,Infrastructure exposure,Physical
+CCRA-032,Railroad density,Infrastructures,IN,Heatwave,HW,Exposure,E,Railroad density,Infrastructure exposure,Physical
+CCRA-038,Urban infrastructure social vulnerability,Infrastructures,IN,Heatwave,HW,Exposure,E,Urban infrastructure social vulnerability,Infrastructure exposure,Physical

@@ -1,0 +1,10 @@
+iso3,country,tier,score,EV_social,Flood,Landslide,Heat,Drought_water,Precip,SLR_coast,Food_agri,Biodiversity,Energy,Infra,Health,notes
+GBR,United Kingdom,A,94,26,23,9,6,8,7,7,5,7,6,3,1,EA NaFRA/RoFRS/RoFSW + ONS/IMD LSOA + UKCP18; strongest flood+CC + fuel poverty
+MEX,Mexico,A,91,24,18,7,5,8,6,4,5,7,6,3,1,INEGI AGEB/manzana + CONEVAL GRS + CENAPRED ANR national flood & landslide
+PHL,Philippines,A,90,34,22,12,5,9,8,6,7,9,4,3,1,PSA barangay census + Project NOAH + PAGASA CliMap — strongest of early set
+AUS,Australia,A,88,24,20,9,5,9,8,4,5,7,6,3,1,ABS SA1 + SEIFA + AFRIP/state floods + BOM/CCiA; federated flood like CAN
+CAN,Canada,A,86,29,21,9,5,8,6,6,5,7,5,3,1,StatCan DA + NRCan flood susceptibility + ClimateData.ca / CanCoast
+CRI,Costa Rica,B,72,24,17,9,5,8,6,4,5,7,6,3,1,CNE/SNIT strong H + IMN; E/V coarser (distrito + cantonal IPM)
+ARG,Argentina,B,68,24,18,9,5,7,6,4,5,7,6,3,1,INDEC radio + NBI solid; federated flood — OEF/JRC heavier outside AMBA
+MAR,Morocco,C,52,33,24,10,5,7,6,4,11,9,5,4,0,HCP RGPH + ABH partial; more global/modeled + OEF dependence
+ETH,Ethiopia,C,48,35,21,12,5,9,5,1,7,9,4,3,1,ESS/COD-PS; landlocked SLR N/A; stronger AFOLU/global fills than city H/E/V
