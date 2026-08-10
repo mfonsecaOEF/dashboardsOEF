@@ -256,6 +256,8 @@ def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
                 """,
                 unsafe_allow_html=True,
             )
+    with st.expander("How is the score calculated?"):
+        render_score_methodology()
 
 
 def render_matrix(
@@ -542,6 +544,77 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
 **Known hard gaps (all / most countries)**
 - Adaptation: **CCRA-039** stormwater drainage *coverage*
 - Mitigation: **I.6** fugitive emissions from fuels
+"""
+    )
+    render_score_methodology()
+
+
+def render_score_methodology() -> None:
+    st.markdown("### Score methodology")
+    st.markdown(
+        """
+The **country score (0–100)** is a **qualitative product ranking** from the country research packages —
+not an automated formula and not an official completeness audit. It answers:
+*“How usable is the public data stack for a city-scale CityCatalyst product in this country?”*
+
+#### What goes into the judgment
+
+Each country is reviewed against a fixed checklist:
+
+| Track | Checklist | Coverage unit |
+|---|---|---|
+| **Mitigation** | GPC Data Availability Framework | 23 GPC subsectors (`I.1` … `VI.1`) |
+| **Adaptation** | CCRA climate-risk indicators (`climate_risk_indicators_by_sector.json`) | 41 indicators (`CCRA-001` … `CCRA-041`) |
+
+For every unit we map public datasets and record:
+
+1. **Coverage** — is there at least one suitable public dataset, an explicit gap, or n/a?
+2. **Granularity / readiness** — best spatial grain for city use (`city-ready`, `needs downscaling`, `facility`, `missing`, …)
+3. **Authority & confidence** — primary official vs research/NGO vs international modeled vs OEF screening
+4. **Hard gaps** — explicit `NO-COVERAGE` / Gap rows count as **missing** even if a proxy exists
+5. **City product fit** — can a municipal officer run GPC inventory / CCRA screening without proprietary bulk buys?
+
+OEF pipeline-ready screening products (flood / heat / landslide H×E×V, shared E/V, etc.) **count** as usable layers even when a country-specific publish is not yet in the catalog.
+
+#### How the score is set (research synthesis)
+
+There is **no closed equation** like `score = 2 × covered + …`.  
+Analysts synthesize the package into a 0–100 score and a quality band:
+
+| Data quality | Legacy tier | Score band | Product reading |
+|---|---|---|---|
+| **Strong data** | A | ≈ **80–100** | Public stack supports city products with limited caveats |
+| **Limited data** | B | ≈ **60–79** | Feasible with downscaling, partners, or heavier OEF fills |
+| **Weak data** | C | ≈ **0–59** | Not enough open city-ready data for Brazil-style rollout near-term |
+
+Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps, and less dependence on national-only or modeled gap-fills.
+
+**Typical downward pressures on the score**
+- Many sectors/indicators only at **national / state** grain (needs downscaling)
+- Missing **city meters / VKT / waste** (mitigation) or **hazard GIS / fine E/V** (adaptation)
+- Reliance on global models where official open layers are closed
+- Extra hard gaps beyond the cross-cutting ones (e.g. MAR disease cases; ETH SLR n/a)
+
+**Typical upward pressures**
+- Official **city / neighborhood** census or inventory layers
+- Open multi-hazard portals (e.g. Project NOAH) or mature LA GHG inventories
+- Broad coverage with few explicit gaps
+
+#### What *is* calculated in this app
+
+| Metric | Formula |
+|---|---|
+| **Combined score** | `(mitigation_score + adaptation_score) / 2` |
+| **Delta** | `adaptation_score − mitigation_score` |
+| **Recommend (per track)** | Strong→YES · Limited→MAYBE · Weak→NO |
+| **Recommend (overview)** | **NO** if either track is Weak; **YES** if at least one is Strong and neither is Weak; else **MAYBE** |
+| **Priority order** | Sort by Recommend (YES→MAYBE→NO), then by Combined score descending |
+
+#### Caveats
+
+- Dataset **counts** in the matrices are not quality-weighted.
+- Scores can be **recalibrated** with product if CityCatalyst priorities change.
+- A YES on data readiness is necessary but **not sufficient** for a full Brazil-style program (partnerships, methodology localization, financing pathway still matter).
 """
     )
 
