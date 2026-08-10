@@ -510,17 +510,20 @@ def page_overview(
     rows = []
     for _, r in base.iterrows():
         iso = r["iso3"]
-        qual_approach = combined_approach(mit_t.get(iso, "C"), adp_t.get(iso, "C"))
+        mt, at = str(mit_t.get(iso, "C")), str(adp_t.get(iso, "C"))
+        qual_approach = combined_approach(mt, at)
         mq, aq = int(mit_score.get(iso, 0)), int(adp_score.get(iso, 0))
         rows.append(
             {
                 "iso3": iso,
                 "country": r["country"],
                 "program_approach": qual_approach,
-                "approach_note": tier_approach_note(worst_tier(mit_t.get(iso, "C"), adp_t.get(iso, "C"))),
+                "approach_note": tier_approach_note(worst_tier(mt, at)),
                 "combined_score": round((mq + aq) / 2),
                 "mit_score": mq,
                 "adp_score": aq,
+                "mit_quality": tier_quality(mt),
+                "adp_quality": tier_quality(at),
             }
         )
     decision = pd.DataFrame(rows)
@@ -529,30 +532,36 @@ def page_overview(
         ["_ord", "combined_score"], ascending=[True, False]
     ).reset_index(drop=True)
     decision.insert(0, "priority", decision.index + 1)
+    n = len(decision)
+    decision["priority_label"] = decision["priority"].map(
+        lambda i: f"#{i} of {n} — start here" if i == 1 else f"#{i} of {n}"
+    )
 
     st.markdown("#### Program priority")
+    st.caption(
+        "Read left → right: **where to start**, **what kind of program**, **what to plan for**. "
+        "No opaque 0–100 score in this table — relative order is the priority number."
+    )
     st.dataframe(
         decision[
             [
-                "priority",
+                "priority_label",
                 "country",
                 "iso3",
                 "program_approach",
                 "approach_note",
-                "combined_score",
-                "mit_score",
-                "adp_score",
+                "mit_quality",
+                "adp_quality",
             ]
         ].rename(
             columns={
-                "priority": "Priority",
+                "priority_label": "Priority",
                 "country": "Country",
                 "iso3": "ISO3",
                 "program_approach": "Program approach",
                 "approach_note": "What to plan for",
-                "combined_score": "Score (0–100)",
-                "mit_score": "Mitigation score",
-                "adp_score": "Adaptation score",
+                "mit_quality": "Mitigation data",
+                "adp_quality": "Adaptation data",
             }
         ),
         use_container_width=True,
@@ -568,11 +577,49 @@ def page_overview(
 | **Extra work** | Doable with partners, sector fills, some downscaling |
 | **Accept downscaling** | Still doable — accept coarser / national→city or modeled data (lower precision) |
 
+| Mitigation / Adaptation data | Meaning |
+|---|---|
+| **Strong data** | City-scale public stack looks solid for that track |
+| **Limited data** | Feasible, but expect gaps and extra work |
+| **Sparse open data** | Possible only if you accept downscaling / lower precision |
+
 Hard gaps almost everywhere: **CCRA-039** (stormwater coverage) · **I.6** (fugitive fuels).
 """
     )
 
     # Ticket / quantitative metrics (secondary)
+    with st.expander("Optional: research scores (0–100) used only to order countries inside a band", expanded=False):
+        st.caption(
+            "These numbers are a relative research ranking, not a % complete and not a pass/fail. "
+            "Higher ≈ easier city-product fit within the same program approach."
+        )
+        st.dataframe(
+            decision[
+                [
+                    "priority_label",
+                    "country",
+                    "iso3",
+                    "program_approach",
+                    "combined_score",
+                    "mit_score",
+                    "adp_score",
+                ]
+            ].rename(
+                columns={
+                    "priority_label": "Priority",
+                    "country": "Country",
+                    "iso3": "ISO3",
+                    "program_approach": "Program approach",
+                    "combined_score": "Combined research rank",
+                    "mit_score": "Mitigation research rank",
+                    "adp_score": "Adaptation research rank",
+                }
+            ),
+            use_container_width=True,
+            hide_index=True,
+            height=280,
+        )
+
     with st.expander("Coverage metrics (ticket: % sectors, % years, quality tier, viable)", expanded=False):
         st.caption(
             "Automatic checklist math from `comparison_unified/` / `coverage_metrics_spec.md`. "
@@ -729,7 +776,7 @@ def main() -> None:
     )
     st.caption(
         "Program approach: **City-ready** · **Extra work** · **Accept downscaling**. "
-        "Overview = product priority; coverage % / years / tiers live under “Coverage metrics”."
+        "Overview ranks countries by program type — not by a cryptic 0–100 score."
     )
 
     try:
