@@ -492,219 +492,131 @@ def page_overview(
 ) -> None:
     st.subheader("How should we approach each country?")
     st.caption(
-        "Strategic view for CityCatalyst-style programs — not a yes/no gate. "
-        "Combines **quantitative metrics** (coverage × years × quality tier) with "
-        "**qualitative research scores**. Ordered from easier to more constrained."
+        "Product view: **what kind of program** to design — not a yes/no gate. "
+        "Ordered by research judgment (City-ready → Extra work → Accept downscaling), then score."
     )
     if mit_sum.empty or adp_sum.empty:
         st.info("No countries match the current filters.")
         return
 
     selected = set(mit_sum["iso3"]).intersection(set(adp_sum["iso3"]))
+    mit_t = mit_sum.set_index("iso3")["tier"]
+    adp_t = adp_sum.set_index("iso3")["tier"]
+    mit_score = mit_sum.set_index("iso3")["score"]
+    adp_score = adp_sum.set_index("iso3")["score"]
 
-    # --- Quantitative layer (comparison_unified) ---
-    if unified is not None and not unified.empty:
-        u = unified[unified["iso3"].isin(selected)].copy()
-        if u.empty:
-            st.warning("No unified metrics rows for the current country filter.")
-        else:
-            u["_ord"] = u["program_approach"].map(APPROACH_ORDER).fillna(9)
-            u = u.sort_values(["_ord", "combined_score"], ascending=[True, False]).reset_index(
-                drop=True
-            )
-            u.insert(0, "priority", u.index + 1)
-
-            # Qualitative approach from research tiers (for comparison)
-            mit_t = mit_sum.set_index("iso3")["tier"]
-            adp_t = adp_sum.set_index("iso3")["tier"]
-            u["qual_mit_approach"] = u["iso3"].map(mit_t).map(tier_approach)
-            u["qual_adp_approach"] = u["iso3"].map(adp_t).map(tier_approach)
-            u["qual_program_approach"] = [
-                combined_approach(m, a)
-                for m, a in zip(u["iso3"].map(mit_t), u["iso3"].map(adp_t))
-            ]
-            u["approach_note"] = u["qual_program_approach"].map(
-                lambda ap: tier_approach_note(
-                    {"City-ready": "A", "Extra work": "B", "Accept downscaling": "C"}.get(ap, "C")
-                )
-            )
-            u["delta_meaning"] = u["delta"].map(delta_meaning)
-
-            st.markdown("#### Decision table (quantitative + qualitative)")
-            show = pd.DataFrame(
-                {
-                    "Priority": u["priority"],
-                    "Country": u["country"],
-                    "ISO3": u["iso3"],
-                    "Automatic checklist view": u["program_approach"],
-                    "Research judgment": u["qual_program_approach"],
-                    "What to plan for": u["approach_note"],
-                    "Research score (0–100)": u["combined_score"].round(0).astype(int),
-                    "Meets GPC data bar?": u["viable_ticket"].map({1: "Yes", 0: "No"}),
-                    "Mitigation: % checklist filled": u["mit_coverage_pct"].map(_pct_label),
-                    "Mitigation: % years covered": u["mit_year_pct"].map(_pct_label),
-                    "Mitigation: % good/global sources": u["mit_t1_t2_pct"].map(_pct_label),
-                    "Mitigation: % city-scale grain": u["mit_city_ready_pct"].map(_pct_label),
-                    "Mitigation checklist view": u["mit_approach"],
-                    "Mitigation research score": u["mit_qual_score"].astype(int),
-                    "Adaptation: % checklist filled": u["adp_coverage_pct"].map(_pct_label),
-                    "Adaptation: % years covered": u["adp_year_pct"].map(_pct_label),
-                    "Adaptation: % good/global sources": u["adp_t1_t2_pct"].map(_pct_label),
-                    "Adaptation: % city-scale grain": u["adp_city_ready_pct"].map(_pct_label),
-                    "Adaptation checklist view": u["adp_approach"],
-                    "Adaptation research score": u["adp_qual_score"].astype(int),
-                    "Score gap (adapt − mit)": u["delta"].astype(int),
-                    "What the score gap means": u["delta_meaning"],
-                }
-            )
-            st.dataframe(show, use_container_width=True, hide_index=True, height=420)
-
-            diverge = u[u["program_approach"] != u["qual_program_approach"]]
-            with st.expander(
-                "Why do some countries show two different program approaches?",
-                expanded=bool(len(diverge)),
-            ):
-                st.markdown(
-                    """
-We show **two answers** on purpose — they measure different things:
-
-| Column in the table | Plain meaning | Looks better when… |
-|---|---|---|
-| **Automatic checklist view** | “Did we find *some* public dataset for most checklist items?” | Global datasets fill many boxes (even if not city-precise) |
-| **Research judgment** | “Would we recommend this for a real city rollout?” | Local / official city-scale data is strong |
-
-**How to use them**
-- Both **City-ready** → best case for a scale-style program.
-- Checklist view **easier** than research (e.g. Ethiopia) → data exists, but plan for lower city precision.
-- Research **easier** than checklist view (e.g. UK) → strong city story; automatic year rules may be under-counting.
-- For **which program to design**, prefer **Research judgment**. For **coverage math / ticket scoring**, use the checklist metrics.
-"""
-                )
-                if len(diverge):
-                    st.markdown("**Countries where the two labels disagree right now:**")
-                    diverge_show = pd.DataFrame(
-                        {
-                            "Country": diverge["country"],
-                            "ISO3": diverge["iso3"],
-                            "Automatic checklist view": diverge["program_approach"],
-                            "Research judgment": diverge["qual_program_approach"],
-                            "In one sentence": diverge.apply(
-                                lambda r: (
-                                    "Checklist looks full (often via global data), but city-product quality looks weak."
-                                    if APPROACH_ORDER.get(r["program_approach"], 9)
-                                    < APPROACH_ORDER.get(r["qual_program_approach"], 9)
-                                    else "City-product research looks stronger than the automatic coverage/year rules."
-                                ),
-                                axis=1,
-                            ),
-                        }
-                    )
-                    st.dataframe(
-                        diverge_show.reset_index(drop=True),
-                        use_container_width=True,
-                        hide_index=True,
-                    )
-                else:
-                    st.success("For the current filter, both methods agree on program approach.")
-    else:
-        st.warning(
-            "Unified metrics file missing — showing qualitative-only view. "
-            "Expected `comparison_unified/coverage_country_summary.csv`."
+    # Build decision rows from qualitative research (product priority)
+    base = mit_sum.loc[mit_sum["iso3"].isin(selected), ["iso3", "country"]].drop_duplicates()
+    rows = []
+    for _, r in base.iterrows():
+        iso = r["iso3"]
+        qual_approach = combined_approach(mit_t.get(iso, "C"), adp_t.get(iso, "C"))
+        mq, aq = int(mit_score.get(iso, 0)), int(adp_score.get(iso, 0))
+        rows.append(
+            {
+                "iso3": iso,
+                "country": r["country"],
+                "program_approach": qual_approach,
+                "approach_note": tier_approach_note(worst_tier(mit_t.get(iso, "C"), adp_t.get(iso, "C"))),
+                "combined_score": round((mq + aq) / 2),
+                "mit_score": mq,
+                "adp_score": aq,
+            }
         )
-        # fallback qualitative-only (previous behavior)
-        m = mit_sum[["iso3", "country", "tier", "score"]].rename(
-            columns={"tier": "mitigation_tier", "score": "mitigation_score"}
-        )
-        a = adp_sum[["iso3", "tier", "score"]].rename(
-            columns={"tier": "adaptation_tier", "score": "adaptation_score"}
-        )
-        both = m.merge(a, on="iso3")
-        both["priority_score"] = (both["mitigation_score"] + both["adaptation_score"]) / 2.0
-        both["delta"] = both["adaptation_score"] - both["mitigation_score"]
-        both["program_approach"] = [
-            combined_approach(mt, at)
-            for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
-        ]
-        both["approach_note"] = [
-            tier_approach_note(worst_tier(mt, at))
-            for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
-        ]
-        both["_ord"] = both["program_approach"].map(APPROACH_ORDER)
-        both = both.sort_values(["_ord", "priority_score"], ascending=[True, False]).reset_index(
-            drop=True
-        )
-        both.insert(0, "priority", both.index + 1)
-        show = both[
+    decision = pd.DataFrame(rows)
+    decision["_ord"] = decision["program_approach"].map(APPROACH_ORDER).fillna(9)
+    decision = decision.sort_values(
+        ["_ord", "combined_score"], ascending=[True, False]
+    ).reset_index(drop=True)
+    decision.insert(0, "priority", decision.index + 1)
+
+    st.markdown("#### Program priority")
+    st.dataframe(
+        decision[
             [
                 "priority",
                 "country",
                 "iso3",
                 "program_approach",
                 "approach_note",
-                "priority_score",
-                "adaptation_score",
-                "mitigation_score",
-                "delta",
+                "combined_score",
+                "mit_score",
+                "adp_score",
             ]
-        ].copy()
-        show["priority_score"] = show["priority_score"].round(0).astype(int)
-        show["delta"] = show["delta"].astype(int)
-        show = show.rename(
+        ].rename(
             columns={
                 "priority": "Priority",
                 "country": "Country",
                 "iso3": "ISO3",
-                "program_approach": "Program approach (qualitative)",
+                "program_approach": "Program approach",
                 "approach_note": "What to plan for",
-                "priority_score": "Combined score",
-                "adaptation_score": "Adaptation score",
-                "mitigation_score": "Mitigation score",
-                "delta": "Delta (adapt − mit)",
+                "combined_score": "Score (0–100)",
+                "mit_score": "Mitigation score",
+                "adp_score": "Adaptation score",
             }
-        )
-        st.dataframe(show, use_container_width=True, hide_index=True, height=420)
+        ),
+        use_container_width=True,
+        hide_index=True,
+        height=360,
+    )
 
     st.markdown(
         """
-**How to read this table**
-
-Think of each country as: *“Can we run a CityCatalyst-style program — and what kind?”*  
-Not: *“Is this country a hard no?”*
-
-**The three program labels**
-
-| Label | Meaning in plain language |
+| Program approach | Meaning |
 |---|---|
-| **City-ready** | Public data is strong enough for a city-scale program with limited caveats |
-| **Extra work** | Doable, but plan for partners, missing sectors, and some downscaling |
-| **Accept downscaling** | Still doable — you must accept coarser / national→city or modeled data (lower precision) |
+| **City-ready** | Strong public city-scale stack — closest to a scale-style program |
+| **Extra work** | Doable with partners, sector fills, some downscaling |
+| **Accept downscaling** | Still doable — accept coarser / national→city or modeled data (lower precision) |
 
-**Two columns that look similar**
-
-| Column | Ask yourself |
-|---|---|
-| **Automatic checklist view** | “Did we tick most checklist boxes with *some* public source?” |
-| **Research judgment** | “Would we actually recommend this for a city rollout tomorrow?” |
-
-When they disagree, open the expander above — that is expected, not a bug.
-
-**Other useful columns**
-
-| Column | Plain meaning |
-|---|---|
-| **% checklist filled** | Share of GPC (23) or CCRA (41) items with at least one public dataset |
-| **% years covered** | Of those items, how much of 2015–2024 has data (rough read from metadata) |
-| **% good/global sources** | Share whose best source is official/vetted or global modeled (not a weak proxy) |
-| **% city-scale grain** | Share already at city / fine geography |
-| **Meets GPC data bar?** | “Yes” if mitigation clears the automatic emissions-coverage threshold |
-| **Research score (0–100)** | Average research judgment; higher ≈ easier city product |
-
-**Known hard gaps almost everywhere**
-- Adaptation: **CCRA-039** stormwater drainage *coverage*
-- Mitigation: **I.6** fugitive emissions from fuels
+Hard gaps almost everywhere: **CCRA-039** (stormwater coverage) · **I.6** (fugitive fuels).
 """
     )
-    render_score_methodology()
+
+    # Ticket / quantitative metrics (secondary)
+    with st.expander("Coverage metrics (ticket: % sectors, % years, quality tier, viable)", expanded=False):
+        st.caption(
+            "Automatic checklist math from `comparison_unified/` / `coverage_metrics_spec.md`. "
+            "Use for scoring inputs — not as a “don’t engage” gate."
+        )
+        if unified is None or unified.empty:
+            st.warning("Missing `comparison_unified/coverage_country_summary.csv`.")
+        else:
+            u = unified[unified["iso3"].isin(selected)].copy()
+            u["qual_approach"] = [
+                combined_approach(mit_t.get(i, "C"), adp_t.get(i, "C")) for i in u["iso3"]
+            ]
+            # Keep same priority order as decision table
+            order_map = dict(zip(decision["iso3"], decision["priority"]))
+            u["priority"] = u["iso3"].map(order_map)
+            u = u.sort_values("priority")
+            metrics_show = pd.DataFrame(
+                {
+                    "Priority": u["priority"],
+                    "Country": u["country"],
+                    "ISO3": u["iso3"],
+                    "Program approach (research)": u["qual_approach"],
+                    "Checklist view (auto)": u["program_approach"],
+                    "Meets GPC viable bar?": u["viable_ticket"].map({1: "Yes", 0: "No"}),
+                    "Mit % checklist": u["mit_coverage_pct"].map(_pct_label),
+                    "Mit % years 2015–24": u["mit_year_pct"].map(_pct_label),
+                    "Mit % T1+T2": u["mit_t1_t2_pct"].map(_pct_label),
+                    "Mit % city grain": u["mit_city_ready_pct"].map(_pct_label),
+                    "Adp % checklist": u["adp_coverage_pct"].map(_pct_label),
+                    "Adp % years 2015–24": u["adp_year_pct"].map(_pct_label),
+                    "Adp % T1+T2": u["adp_t1_t2_pct"].map(_pct_label),
+                    "Adp % city grain": u["adp_city_ready_pct"].map(_pct_label),
+                }
+            )
+            st.dataframe(metrics_show, use_container_width=True, hide_index=True, height=320)
+            st.markdown(
+                """
+**Ticket dimensions:** checklist coverage % · years covered 2015–2024 · quality tier (T1 vetted / T2 global-modeled / T3 proxy) · viable bar for GPC replication.  
+If **Checklist view** is easier than **Program approach (research)**, global fills are padding the checklist — still plan for lower city precision.
+"""
+            )
+
+    with st.expander("Score methodology", expanded=False):
+        render_score_methodology()
 
 
 def render_score_methodology() -> None:
@@ -816,9 +728,8 @@ def main() -> None:
         "not whether a country is in or out."
     )
     st.caption(
-        "Program approach: **City-ready** · **Extra work** · **Accept downscaling** "
-        "(still feasible; plan for lower city precision). "
-        "Score bands ≈ 80–100 / 60–79 / 0–59."
+        "Program approach: **City-ready** · **Extra work** · **Accept downscaling**. "
+        "Overview = product priority; coverage % / years / tiers live under “Coverage metrics”."
     )
 
     try:
