@@ -22,14 +22,21 @@ TIER_COLORS = {"A": "#0f6b5c", "B": "#9a6b12", "C": "#8a3a32"}
 TIER_QUALITY = {
     "A": "Strong data",
     "B": "Limited data",
-    "C": "Weak data",
+    "C": "Sparse open data",
 }
-TIER_CALL = {
-    "A": "YES",
-    "B": "MAYBE",
-    "C": "NO",
+# Strategic framing: how to run a program — not yes/no gatekeeping
+TIER_APPROACH = {
+    "A": "City-ready",
+    "B": "Extra work",
+    "C": "Accept downscaling",
+}
+TIER_APPROACH_NOTE = {
+    "A": "Public stack supports city-scale products with limited caveats — good for scale-style programs",
+    "B": "Doable with partners + sector fills; expect some national→city downscaling",
+    "C": "Still doable — plan for population/national downscaling and/or OEF modeled fills; accept lower city precision",
 }
 QUALITY_TO_TIER = {v: k for k, v in TIER_QUALITY.items()}
+APPROACH_ORDER = {"City-ready": 0, "Extra work": 1, "Accept downscaling": 2}
 
 # Score bands used in the research synthesis (approximate)
 SCORE_BANDS = {
@@ -71,22 +78,31 @@ def load_csv(path: str) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def _tier_key(tier: str) -> str:
+    return str(tier).strip().upper()
+
+
 def tier_quality(tier: str) -> str:
-    return TIER_QUALITY.get(str(tier).strip().upper(), str(tier))
+    return TIER_QUALITY.get(_tier_key(tier), str(tier))
 
 
-def tier_call(tier: str) -> str:
-    return TIER_CALL.get(str(tier).strip().upper(), "—")
+def tier_approach(tier: str) -> str:
+    return TIER_APPROACH.get(_tier_key(tier), "—")
 
 
-def combined_call(mit_tier: str, adp_tier: str) -> str:
-    """YES if neither track is weak and at least one is strong; NO if any weak; else MAYBE."""
-    tiers = {str(mit_tier).strip().upper(), str(adp_tier).strip().upper()}
-    if "C" in tiers:
-        return "NO"
-    if "A" in tiers:
-        return "YES"
-    return "MAYBE"
+def tier_approach_note(tier: str) -> str:
+    return TIER_APPROACH_NOTE.get(_tier_key(tier), "")
+
+
+def worst_tier(mit_tier: str, adp_tier: str) -> str:
+    """More demanding track wins (C > B > A) — sets the program design constraint."""
+    rank = {"A": 0, "B": 1, "C": 2}
+    m, a = _tier_key(mit_tier), _tier_key(adp_tier)
+    return m if rank.get(m, 0) >= rank.get(a, 0) else a
+
+
+def combined_approach(mit_tier: str, adp_tier: str) -> str:
+    return tier_approach(worst_tier(mit_tier, adp_tier))
 
 
 def delta_meaning(delta: float) -> str:
@@ -100,7 +116,8 @@ def delta_meaning(delta: float) -> str:
 def enrich_summary(summary: pd.DataFrame) -> pd.DataFrame:
     out = summary.copy()
     out["data_quality"] = out["tier"].map(tier_quality)
-    out["recommend"] = out["tier"].map(tier_call)
+    out["approach"] = out["tier"].map(tier_approach)
+    out["approach_note"] = out["tier"].map(tier_approach_note)
     return out.sort_values("score", ascending=False).reset_index(drop=True)
 
 
@@ -195,10 +212,11 @@ def datasets_for_matrix_cell(
 
 
 def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
-    st.subheader("Priority ranking (most → least recommended)")
+    st.subheader("Priority ranking (easier → more constrained programs)")
     st.caption(
-        "Ordered by score. **YES** = Strong data (≈80–100) · "
-        "**MAYBE** = Limited data (≈60–79) · **NO** = Weak data (≈0–59)."
+        "Ordered by score within approach. "
+        "**City-ready** (≈80–100) · **Extra work** (≈60–79) · "
+        "**Accept downscaling** (≈0–59) — still feasible; plan for lower city precision."
     )
     if summary.empty:
         st.info("No countries match the current filters.")
@@ -210,7 +228,7 @@ def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
             tier = str(row["tier"]).strip().upper()
             color = TIER_COLORS.get(tier, "#333")
             quality = tier_quality(tier)
-            call = tier_call(tier)
+            call = tier_approach(tier)
             covered_label = (
                 f"{int(row['subsectors_covered'])}/23 subsectors"
                 if track == "Mitigation"
@@ -250,7 +268,10 @@ def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
                     <b style="color:#14231f;">{int(row['unique_datasets'])}</b> datasets
                     {"<br/><span style='color:#8a3a32;'>Gaps: " + str(missing) + "</span>" if pd.notna(missing) and str(missing).strip() else ""}
                   </div>
-                  <div style="margin-top:10px;font-size:.84rem;color:#5a6e68;line-height:1.4;">
+                  <div style="margin-top:8px;font-size:.8rem;color:#0b5f63;line-height:1.35;">
+                    <b>Approach:</b> {tier_approach_note(tier)}
+                  </div>
+                  <div style="margin-top:8px;font-size:.84rem;color:#5a6e68;line-height:1.4;">
                     {row['notes']}
                   </div>
                 </div>
@@ -373,7 +394,7 @@ def render_country_detail(
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Score", int(row["score"]))
-    c2.metric("Recommend", tier_call(row["tier"]))
+    c2.metric("Approach", tier_approach(row["tier"]))
     if track == "Mitigation":
         c3.metric("Covered", f"{int(row['subsectors_covered'])}/23")
         c4.metric("City-ready", int(row["city_ready_subsectors"]))
@@ -385,9 +406,8 @@ def render_country_detail(
         key_col = "related_ccra_indicator"
         name_col = "indicator_name"
     st.caption(
-        f"Data quality: **{tier_quality(row['tier'])}** "
-        f"(legacy tier {row['tier']}, band {SCORE_BANDS.get(str(row['tier']).upper(), '—')}). "
-        "YES ≈80–100 · MAYBE ≈60–79 · NO ≈0–59."
+        f"**{tier_quality(row['tier'])}** · {tier_approach_note(row['tier'])} "
+        f"(band {SCORE_BANDS.get(_tier_key(row['tier']), '—')})."
     )
 
     st.markdown(f"**Notes:** {row['notes']}")
@@ -453,10 +473,11 @@ def render_country_detail(
 
 
 def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
-    st.subheader("Which country should we prioritize?")
+    st.subheader("How should we approach each country?")
     st.caption(
-        "Decision view for CityCatalyst-style expansion: ordered from most recommended to least. "
-        "Same 9 countries, mitigation (GPC) + adaptation (CCRA)."
+        "Strategic view for CityCatalyst-style programs — not a yes/no gate. "
+        "All 9 countries can be engaged; the column tells you what kind of program to design. "
+        "Ordered from easier (city-ready) to more constrained (accept downscaling)."
     )
     if mit_sum.empty or adp_sum.empty:
         st.info("No countries match the current filters.")
@@ -475,15 +496,18 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
     both["delta"] = both["adaptation_score"] - both["mitigation_score"]
     both["mitigation_quality"] = both["mitigation_tier"].map(tier_quality)
     both["adaptation_quality"] = both["adaptation_tier"].map(tier_quality)
-    both["mitigation_call"] = both["mitigation_tier"].map(tier_call)
-    both["adaptation_call"] = both["adaptation_tier"].map(tier_call)
-    both["recommend"] = [
-        combined_call(mt, at)
+    both["mitigation_approach"] = both["mitigation_tier"].map(tier_approach)
+    both["adaptation_approach"] = both["adaptation_tier"].map(tier_approach)
+    both["program_approach"] = [
+        combined_approach(mt, at)
+        for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
+    ]
+    both["approach_note"] = [
+        tier_approach_note(worst_tier(mt, at))
         for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
     ]
     both["delta_meaning"] = both["delta"].map(delta_meaning)
-    order = {"YES": 0, "MAYBE": 1, "NO": 2}
-    both["_ord"] = both["recommend"].map(order)
+    both["_ord"] = both["program_approach"].map(APPROACH_ORDER)
     both = both.sort_values(["_ord", "priority_score"], ascending=[True, False]).reset_index(drop=True)
     both.insert(0, "priority", both.index + 1)
 
@@ -492,13 +516,14 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
             "priority",
             "country",
             "iso3",
-            "recommend",
+            "program_approach",
+            "approach_note",
             "priority_score",
             "adaptation_score",
-            "adaptation_call",
+            "adaptation_approach",
             "adaptation_quality",
             "mitigation_score",
-            "mitigation_call",
+            "mitigation_approach",
             "mitigation_quality",
             "delta",
             "delta_meaning",
@@ -511,13 +536,14 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
             "priority": "Priority",
             "country": "Country",
             "iso3": "ISO3",
-            "recommend": "Recommend",
+            "program_approach": "Program approach",
+            "approach_note": "What to plan for",
             "priority_score": "Combined score",
             "adaptation_score": "Adaptation score",
-            "adaptation_call": "Adaptation",
+            "adaptation_approach": "Adaptation approach",
             "adaptation_quality": "Adaptation data",
             "mitigation_score": "Mitigation score",
-            "mitigation_call": "Mitigation",
+            "mitigation_approach": "Mitigation approach",
             "mitigation_quality": "Mitigation data",
             "delta": "Delta (adapt − mit)",
             "delta_meaning": "What the delta means",
@@ -527,16 +553,21 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
 
     st.markdown(
         """
-**How to read the decision**
+**How to read this (strategic, not gatekeeping)**
 
-| Signal | Meaning | Cutoff |
+Every country here can host a program. The question is **what type of program** the public data can support.
+
+| Program approach | Meaning | Typical score band |
 |---|---|---|
-| **Recommend = YES** | Worth prioritizing for CityCatalyst-style work | At least one track is **Strong data**, and neither is **Weak data** |
-| **Recommend = MAYBE** | Possible pilot with caveats / heavier OEF fills | Both tracks are **Limited data** |
-| **Recommend = NO** | Not recommended for Brazil-style rollout near-term | Either track is **Weak data** |
-| **Strong / Limited / Weak data** | Replaces old A / B / C tiers | Strong ≈80–100 · Limited ≈60–79 · Weak ≈0–59 |
-| **Combined score** | Average of mitigation + adaptation scores | Higher = higher priority within the same Recommend band |
-| **Delta (adapt − mit)** | Which product track has better public data | **≈0 (±10)** balanced · **≥+10** CCRA-first · **≤−10** GPC-first |
+| **City-ready** | Public city-scale stack is strong — closer to a Brazil-style scale program | ≈80–100 (Strong data) |
+| **Extra work** | Feasible pilot / phased rollout — need partners, sector fills, some downscaling | ≈60–79 (Limited data) |
+| **Accept downscaling** | Still doable (e.g. Morocco-style) — plan for population/national→city downscaling and/or OEF modeled fills; **accept lower city precision** | ≈0–59 (Sparse open data) |
+
+| Other columns | Meaning |
+|---|---|
+| **Combined score** | `(mitigation + adaptation) / 2` — higher = easier within the same approach band |
+| **Delta (adapt − mit)** | Which track is stronger: ≈0 (±10) balanced · ≥+10 CCRA-first · ≤−10 GPC-first |
+| **What to plan for** | Short qualitative design note for program scoping |
 
 **Tracks**
 - **Mitigation** = public data for city GPC GHG inventories (23 subsectors)
@@ -582,13 +613,14 @@ OEF pipeline-ready screening products (flood / heat / landslide H×E×V, shared 
 There is **no closed equation** like `score = 2 × covered + …`.  
 Analysts synthesize the package into a 0–100 score and a quality band:
 
-| Data quality | Legacy tier | Score band | Product reading |
+| Data quality | Program approach | Legacy tier | Score band |
 |---|---|---|---|
-| **Strong data** | A | ≈ **80–100** | Public stack supports city products with limited caveats |
-| **Limited data** | B | ≈ **60–79** | Feasible with downscaling, partners, or heavier OEF fills |
-| **Weak data** | C | ≈ **0–59** | Not enough open city-ready data for Brazil-style rollout near-term |
+| **Strong data** | **City-ready** | A | ≈ **80–100** |
+| **Limited data** | **Extra work** | B | ≈ **60–79** |
+| **Sparse open data** | **Accept downscaling** | C | ≈ **0–59** |
 
-Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps, and less dependence on national-only or modeled gap-fills.
+Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps, and less dependence on national-only or modeled gap-fills.  
+**Sparse open data does not mean “don’t engage”** — it means design the program assuming population/national downscaling and lower city precision (Morocco-style).
 
 **Typical downward pressures on the score**
 - Many sectors/indicators only at **national / state** grain (needs downscaling)
@@ -607,15 +639,15 @@ Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps,
 |---|---|
 | **Combined score** | `(mitigation_score + adaptation_score) / 2` |
 | **Delta** | `adaptation_score − mitigation_score` |
-| **Recommend (per track)** | Strong→YES · Limited→MAYBE · Weak→NO |
-| **Recommend (overview)** | **NO** if either track is Weak; **YES** if at least one is Strong and neither is Weak; else **MAYBE** |
-| **Priority order** | Sort by Recommend (YES→MAYBE→NO), then by Combined score descending |
+| **Program approach (per track)** | Strong→City-ready · Limited→Extra work · Sparse→Accept downscaling |
+| **Program approach (overview)** | Takes the **more constrained** of the two tracks (C beats B beats A) |
+| **Priority order** | Sort by approach (City-ready → Extra work → Accept downscaling), then by Combined score descending |
 
 #### Caveats
 
 - Dataset **counts** in the matrices are not quality-weighted.
 - Scores can be **recalibrated** with product if CityCatalyst priorities change.
-- A YES on data readiness is necessary but **not sufficient** for a full Brazil-style program (partnerships, methodology localization, financing pathway still matter).
+- Data approach is necessary but **not sufficient** for a full Brazil-style program (partnerships, methodology localization, financing pathway still matter).
 """
     )
 
@@ -642,11 +674,13 @@ def main() -> None:
     st.title("Data Coverage Assessment")
     st.markdown('<p class="oef-brand">Open Earth Foundation</p>', unsafe_allow_html=True)
     st.markdown(
-        "Which countries have enough **public city-scale data** for CityCatalyst-style "
-        "**Mitigation (GPC)** and **Adaptation (CCRA)** — and in what priority order?"
+        "Public city-scale data for CityCatalyst-style **Mitigation (GPC)** and "
+        "**Adaptation (CCRA)** — scored and ranked by **how to design the program**, "
+        "not whether a country is in or out."
     )
     st.caption(
-        "Recommend: **YES** (Strong data) · **MAYBE** (Limited data) · **NO** (Weak data). "
+        "Program approach: **City-ready** · **Extra work** · **Accept downscaling** "
+        "(still feasible; plan for lower city precision). "
         "Score bands ≈ 80–100 / 60–79 / 0–59."
     )
 
@@ -679,12 +713,15 @@ def main() -> None:
             ["Overview", "Mitigation (GPC)", "Adaptation (CCRA)"],
             index=0,
         )
-        quality_options = ["Strong data", "Limited data", "Weak data"]
+        quality_options = ["Strong data", "Limited data", "Sparse open data"]
         qualities = st.multiselect(
             "Filter by data quality",
             quality_options,
             default=quality_options,
-            help="Strong ≈ YES (80–100) · Limited ≈ MAYBE (60–79) · Weak ≈ NO (0–59). Replaces A/B/C.",
+            help=(
+                "Strong → City-ready (≈80–100) · Limited → Extra work (≈60–79) · "
+                "Sparse → Accept downscaling (≈0–59). Replaces A/B/C."
+            ),
         )
 
         c1, c2 = st.columns(2)
