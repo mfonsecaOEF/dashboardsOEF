@@ -1,5 +1,6 @@
 """
-OEF Data Coverage Dashboard — Mitigation (GPC) + Adaptation (CCRA)
+Data Coverage Assessment — Open Earth Foundation
+Mitigation (GPC) + Adaptation (CCRA)
 
 Shareable via Streamlit Community Cloud. Teammates only need the URL.
 """
@@ -621,7 +622,7 @@ Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps,
 
 def main() -> None:
     st.set_page_config(
-        page_title="OEF Data Coverage",
+        page_title="Data Coverage Assessment",
         page_icon="🌍",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -631,13 +632,15 @@ def main() -> None:
         """
         <style>
           .block-container { padding-top: 1.2rem; }
-          h1 { font-family: Georgia, serif !important; color: #0b5f63 !important; }
+          h1 { font-family: Georgia, serif !important; color: #0b5f63 !important; margin-bottom: 0.15rem !important; }
+          .oef-brand { color: #5a6e68; font-size: 1.05rem; margin: 0 0 0.75rem 0; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    st.title("OEF Data Coverage")
+    st.title("Data Coverage Assessment")
+    st.markdown('<p class="oef-brand">Open Earth Foundation</p>', unsafe_allow_html=True)
     st.markdown(
         "Which countries have enough **public city-scale data** for CityCatalyst-style "
         "**Mitigation (GPC)** and **Adaptation (CCRA)** — and in what priority order?"
