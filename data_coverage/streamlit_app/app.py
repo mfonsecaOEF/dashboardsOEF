@@ -17,6 +17,26 @@ ADP = ROOT / "adaptation" / "comparison"
 
 TIER_COLORS = {"A": "#0f6b5c", "B": "#9a6b12", "C": "#8a3a32"}
 
+# Human-readable decision labels (source tier stays A/B/C in CSVs)
+TIER_QUALITY = {
+    "A": "Strong data",
+    "B": "Limited data",
+    "C": "Weak data",
+}
+TIER_CALL = {
+    "A": "YES",
+    "B": "MAYBE",
+    "C": "NO",
+}
+QUALITY_TO_TIER = {v: k for k, v in TIER_QUALITY.items()}
+
+# Score bands used in the research synthesis (approximate)
+SCORE_BANDS = {
+    "A": "≈80–100",
+    "B": "≈60–79",
+    "C": "≈0–59",
+}
+
 STATUS_ICONS = {
     "city-ready": "🟢",
     "facility": "🔵",
@@ -48,6 +68,39 @@ THEME_LABEL_TO_IDS = {label: ids for _, label, ids in ADP_THEMES}
 @st.cache_data
 def load_csv(path: str) -> pd.DataFrame:
     return pd.read_csv(path)
+
+
+def tier_quality(tier: str) -> str:
+    return TIER_QUALITY.get(str(tier).strip().upper(), str(tier))
+
+
+def tier_call(tier: str) -> str:
+    return TIER_CALL.get(str(tier).strip().upper(), "—")
+
+
+def combined_call(mit_tier: str, adp_tier: str) -> str:
+    """YES if neither track is weak and at least one is strong; NO if any weak; else MAYBE."""
+    tiers = {str(mit_tier).strip().upper(), str(adp_tier).strip().upper()}
+    if "C" in tiers:
+        return "NO"
+    if "A" in tiers:
+        return "YES"
+    return "MAYBE"
+
+
+def delta_meaning(delta: float) -> str:
+    if delta >= 10:
+        return "Adaptation much stronger → prefer CCRA-first"
+    if delta <= -10:
+        return "Mitigation much stronger → prefer GPC-first"
+    return "Balanced (±10) — similar readiness on both tracks"
+
+
+def enrich_summary(summary: pd.DataFrame) -> pd.DataFrame:
+    out = summary.copy()
+    out["data_quality"] = out["tier"].map(tier_quality)
+    out["recommend"] = out["tier"].map(tier_call)
+    return out.sort_values("score", ascending=False).reset_index(drop=True)
 
 
 def status_key(cell: str) -> str:
@@ -141,15 +194,22 @@ def datasets_for_matrix_cell(
 
 
 def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
-    st.subheader("Country leaderboard")
+    st.subheader("Priority ranking (most → least recommended)")
+    st.caption(
+        "Ordered by score. **YES** = Strong data (≈80–100) · "
+        "**MAYBE** = Limited data (≈60–79) · **NO** = Weak data (≈0–59)."
+    )
     if summary.empty:
         st.info("No countries match the current filters.")
         return
+    ranked = enrich_summary(summary)
     cols = st.columns(3)
-    for i, (_, row) in enumerate(summary.iterrows()):
+    for i, (_, row) in enumerate(ranked.iterrows()):
         with cols[i % 3]:
-            tier = row["tier"]
+            tier = str(row["tier"]).strip().upper()
             color = TIER_COLORS.get(tier, "#333")
+            quality = tier_quality(tier)
+            call = tier_call(tier)
             covered_label = (
                 f"{int(row['subsectors_covered'])}/23 subsectors"
                 if track == "Mitigation"
@@ -173,14 +233,15 @@ def render_leaderboard(summary: pd.DataFrame, track: str) -> None:
                   <div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:650;margin:4px 0;">
                     {row['country']}
                   </div>
-                  <div style="display:flex;align-items:baseline;gap:10px;margin:8px 0;">
+                  <div style="display:flex;align-items:baseline;gap:10px;margin:8px 0;flex-wrap:wrap;">
                     <span style="font-family:Georgia,serif;font-size:2rem;font-weight:650;color:#0b5f63;">
                       {int(row['score'])}
                     </span>
                     <span style="border:1px solid {color};color:{color};border-radius:999px;
                                  padding:2px 8px;font-size:.75rem;font-weight:700;">
-                      Tier {tier}
+                      {call}
                     </span>
+                    <span style="color:#5a6e68;font-size:.78rem;font-weight:600;">{quality}</span>
                   </div>
                   <div style="font-size:.82rem;color:#5a6e68;line-height:1.45;">
                     <b style="color:#14231f;">{covered_label}</b> ·
@@ -309,7 +370,7 @@ def render_country_detail(
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Score", int(row["score"]))
-    c2.metric("Tier", row["tier"])
+    c2.metric("Recommend", tier_call(row["tier"]))
     if track == "Mitigation":
         c3.metric("Covered", f"{int(row['subsectors_covered'])}/23")
         c4.metric("City-ready", int(row["city_ready_subsectors"]))
@@ -320,6 +381,11 @@ def render_country_detail(
         c4.metric("City-ready", int(row["city_ready_indicators"]))
         key_col = "related_ccra_indicator"
         name_col = "indicator_name"
+    st.caption(
+        f"Data quality: **{tier_quality(row['tier'])}** "
+        f"(legacy tier {row['tier']}, band {SCORE_BANDS.get(str(row['tier']).upper(), '—')}). "
+        "YES ≈80–100 · MAYBE ≈60–79 · NO ≈0–59."
+    )
 
     st.markdown(f"**Notes:** {row['notes']}")
     st.markdown("**Top datasets (country anchors)**")
@@ -384,11 +450,15 @@ def render_country_detail(
 
 
 def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
-    st.subheader("Cross-track overview")
-    st.caption("Same 9 countries researched for GPC mitigation and CCRA adaptation.")
+    st.subheader("Which country should we prioritize?")
+    st.caption(
+        "Decision view for CityCatalyst-style expansion: ordered from most recommended to least. "
+        "Same 9 countries, mitigation (GPC) + adaptation (CCRA)."
+    )
     if mit_sum.empty or adp_sum.empty:
         st.info("No countries match the current filters.")
         return
+
     m = mit_sum[["iso3", "country", "tier", "score"]].rename(
         columns={"tier": "mitigation_tier", "score": "mitigation_score"}
     )
@@ -396,17 +466,82 @@ def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
         columns={"tier": "adaptation_tier", "score": "adaptation_score"}
     )
     both = m.merge(a, on="iso3")
-    both["delta_adapt_minus_mit"] = both["adaptation_score"] - both["mitigation_score"]
-    st.dataframe(both.sort_values("adaptation_score", ascending=False), use_container_width=True, hide_index=True)
+    both["priority_score"] = (
+        both["mitigation_score"] + both["adaptation_score"]
+    ) / 2.0
+    both["delta"] = both["adaptation_score"] - both["mitigation_score"]
+    both["mitigation_quality"] = both["mitigation_tier"].map(tier_quality)
+    both["adaptation_quality"] = both["adaptation_tier"].map(tier_quality)
+    both["mitigation_call"] = both["mitigation_tier"].map(tier_call)
+    both["adaptation_call"] = both["adaptation_tier"].map(tier_call)
+    both["recommend"] = [
+        combined_call(mt, at)
+        for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
+    ]
+    both["delta_meaning"] = both["delta"].map(delta_meaning)
+    order = {"YES": 0, "MAYBE": 1, "NO": 2}
+    both["_ord"] = both["recommend"].map(order)
+    both = both.sort_values(["_ord", "priority_score"], ascending=[True, False]).reset_index(drop=True)
+    both.insert(0, "priority", both.index + 1)
+
+    show = both[
+        [
+            "priority",
+            "country",
+            "iso3",
+            "recommend",
+            "priority_score",
+            "adaptation_score",
+            "adaptation_call",
+            "adaptation_quality",
+            "mitigation_score",
+            "mitigation_call",
+            "mitigation_quality",
+            "delta",
+            "delta_meaning",
+        ]
+    ].copy()
+    show["priority_score"] = show["priority_score"].round(0).astype(int)
+    show["delta"] = show["delta"].astype(int)
+    show = show.rename(
+        columns={
+            "priority": "Priority",
+            "country": "Country",
+            "iso3": "ISO3",
+            "recommend": "Recommend",
+            "priority_score": "Combined score",
+            "adaptation_score": "Adaptation score",
+            "adaptation_call": "Adaptation",
+            "adaptation_quality": "Adaptation data",
+            "mitigation_score": "Mitigation score",
+            "mitigation_call": "Mitigation",
+            "mitigation_quality": "Mitigation data",
+            "delta": "Delta (adapt − mit)",
+            "delta_meaning": "What the delta means",
+        }
+    )
+    st.dataframe(show, use_container_width=True, hide_index=True, height=420)
 
     st.markdown(
         """
-**How to read this**
+**How to read the decision**
+
+| Signal | Meaning | Cutoff |
+|---|---|---|
+| **Recommend = YES** | Worth prioritizing for CityCatalyst-style work | At least one track is **Strong data**, and neither is **Weak data** |
+| **Recommend = MAYBE** | Possible pilot with caveats / heavier OEF fills | Both tracks are **Limited data** |
+| **Recommend = NO** | Not recommended for Brazil-style rollout near-term | Either track is **Weak data** |
+| **Strong / Limited / Weak data** | Replaces old A / B / C tiers | Strong ≈80–100 · Limited ≈60–79 · Weak ≈0–59 |
+| **Combined score** | Average of mitigation + adaptation scores | Higher = higher priority within the same Recommend band |
+| **Delta (adapt − mit)** | Which product track has better public data | **≈0 (±10)** balanced · **≥+10** CCRA-first · **≤−10** GPC-first |
+
+**Tracks**
 - **Mitigation** = public data for city GPC GHG inventories (23 subsectors)
 - **Adaptation** = public data for city CCRA indicators (41 H×E×V indicators)
-- Scores are qualitative product rankings for city use — not official completeness audits
-- Cross-cutting adaptation hard gap in all countries: **CCRA-039** stormwater drainage *coverage*
-- Cross-cutting mitigation hard gap almost everywhere: **I.6** fugitive emissions from fuels
+
+**Known hard gaps (all / most countries)**
+- Adaptation: **CCRA-039** stormwater drainage *coverage*
+- Mitigation: **I.6** fugitive emissions from fuels
 """
     )
 
@@ -431,8 +566,12 @@ def main() -> None:
 
     st.title("OEF Data Coverage")
     st.markdown(
-        "Public datasets for **city-scale** climate products — "
-        "**Mitigation (GPC)** and **Adaptation (CCRA)** across 9 countries."
+        "Which countries have enough **public city-scale data** for CityCatalyst-style "
+        "**Mitigation (GPC)** and **Adaptation (CCRA)** — and in what priority order?"
+    )
+    st.caption(
+        "Recommend: **YES** (Strong data) · **MAYBE** (Limited data) · **NO** (Weak data). "
+        "Score bands ≈ 80–100 / 60–79 / 0–59."
     )
 
     try:
@@ -464,7 +603,13 @@ def main() -> None:
             ["Overview", "Mitigation (GPC)", "Adaptation (CCRA)"],
             index=0,
         )
-        tiers = st.multiselect("Filter tiers", ["A", "B", "C"], default=["A", "B", "C"])
+        quality_options = ["Strong data", "Limited data", "Weak data"]
+        qualities = st.multiselect(
+            "Filter by data quality",
+            quality_options,
+            default=quality_options,
+            help="Strong ≈ YES (80–100) · Limited ≈ MAYBE (60–79) · Weak ≈ NO (0–59). Replaces A/B/C.",
+        )
 
         c1, c2 = st.columns(2)
         if c1.button("All countries", use_container_width=True):
@@ -484,23 +629,24 @@ def main() -> None:
             "Filter countries",
             all_labels,
             key="country_filter",
-            help="Choose one or more countries. Combines with the tier filter.",
+            help="Choose one or more countries. Combines with the data-quality filter.",
         )
         st.divider()
         st.caption("Data from `data_coverage/{mitigation,adaptation}/comparison/`")
         st.caption("Updated with country research packages (9 ISO3).")
 
-    if not tiers:
-        st.warning("Select at least one tier.")
+    if not qualities:
+        st.warning("Select at least one data-quality band.")
         st.stop()
     if not countries_selected:
         st.warning("Select at least one country.")
         st.stop()
 
     selected_isos = {label_to_iso[label] for label in countries_selected if label in label_to_iso}
+    selected_tiers = {QUALITY_TO_TIER[q] for q in qualities if q in QUALITY_TO_TIER}
 
     def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
-        return df[df["tier"].isin(tiers) & df["iso3"].isin(selected_isos)].reset_index(drop=True)
+        return df[df["tier"].isin(selected_tiers) & df["iso3"].isin(selected_isos)].reset_index(drop=True)
 
     mit_sum_f = apply_filters(mit_sum)
     adp_sum_f = apply_filters(adp_sum)
@@ -512,7 +658,7 @@ def main() -> None:
     adp_tops_f = adp_tops[adp_tops["iso3"].isin(selected_isos)].copy()
 
     if mit_sum_f.empty and adp_sum_f.empty:
-        st.warning("No countries match the current tier + country filters.")
+        st.warning("No countries match the current quality + country filters.")
         st.stop()
 
     if view == "Overview":
