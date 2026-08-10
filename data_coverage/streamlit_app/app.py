@@ -44,6 +44,19 @@ APPROACH_ORDER = {
     "Insufficient": 3,
 }
 
+# Soft fills for Program priority table (readable on white)
+APPROACH_FILL = {
+    "City-ready": "#d7efe8",
+    "Extra work": "#f5ecd0",
+    "Accept downscaling": "#f3d9d6",
+    "Insufficient": "#f3d9d6",
+}
+QUALITY_FILL = {
+    "Strong data": "#d7efe8",
+    "Limited data": "#f5ecd0",
+    "Sparse open data": "#f3d9d6",
+}
+
 # Score bands used in the research synthesis (approximate)
 SCORE_BANDS = {
     "A": "≈80–100",
@@ -485,6 +498,27 @@ def _pct_label(x: float) -> str:
         return "—"
 
 
+def style_program_priority_table(df: pd.DataFrame):
+    """Color-code Program approach + data-quality columns."""
+
+    def _fill(val: object, palette: dict[str, str]) -> str:
+        bg = palette.get(str(val), "")
+        if not bg:
+            return ""
+        return f"background-color: {bg}; color: #14231f; font-weight: 600;"
+
+    styler = df.style
+    if "Program approach" in df.columns:
+        styler = styler.map(
+            lambda v: _fill(v, APPROACH_FILL),
+            subset=["Program approach"],
+        )
+    for col in ("Mitigation data", "Adaptation data"):
+        if col in df.columns:
+            styler = styler.map(lambda v: _fill(v, QUALITY_FILL), subset=[col])
+    return styler
+
+
 def page_overview(
     mit_sum: pd.DataFrame,
     adp_sum: pd.DataFrame,
@@ -540,30 +574,31 @@ def page_overview(
     st.markdown("#### Program priority")
     st.caption(
         "Read left → right: **where to start**, **what kind of program**, **what to plan for**. "
-        "No opaque 0–100 score in this table — relative order is the priority number."
+        "Colors: green = City-ready / Strong · amber = Extra work / Limited · rose = Accept downscaling / Sparse."
+    )
+    priority_view = decision[
+        [
+            "priority_label",
+            "country",
+            "iso3",
+            "program_approach",
+            "approach_note",
+            "mit_quality",
+            "adp_quality",
+        ]
+    ].rename(
+        columns={
+            "priority_label": "Priority",
+            "country": "Country",
+            "iso3": "ISO3",
+            "program_approach": "Program approach",
+            "approach_note": "What to plan for",
+            "mit_quality": "Mitigation data",
+            "adp_quality": "Adaptation data",
+        }
     )
     st.dataframe(
-        decision[
-            [
-                "priority_label",
-                "country",
-                "iso3",
-                "program_approach",
-                "approach_note",
-                "mit_quality",
-                "adp_quality",
-            ]
-        ].rename(
-            columns={
-                "priority_label": "Priority",
-                "country": "Country",
-                "iso3": "ISO3",
-                "program_approach": "Program approach",
-                "approach_note": "What to plan for",
-                "mit_quality": "Mitigation data",
-                "adp_quality": "Adaptation data",
-            }
-        ),
+        style_program_priority_table(priority_view),
         use_container_width=True,
         hide_index=True,
         height=360,
@@ -571,17 +606,11 @@ def page_overview(
 
     st.markdown(
         """
-| Program approach | Meaning |
-|---|---|
-| **City-ready** | Strong public city-scale stack — closest to a scale-style program |
-| **Extra work** | Doable with partners, sector fills, some downscaling |
-| **Accept downscaling** | Still doable — accept coarser / national→city or modeled data (lower precision) |
-
-| Mitigation / Adaptation data | Meaning |
-|---|---|
-| **Strong data** | City-scale public stack looks solid for that track |
-| **Limited data** | Feasible, but expect gaps and extra work |
-| **Sparse open data** | Possible only if you accept downscaling / lower precision |
+| Color | Program approach | Mitigation / Adaptation data |
+|---|---|---|
+| Green | **City-ready** — strong city-scale stack | **Strong data** |
+| Amber | **Extra work** — partners / fills / some downscaling | **Limited data** |
+| Rose | **Accept downscaling** — lower city precision OK | **Sparse open data** |
 
 Hard gaps almost everywhere: **CCRA-039** (stormwater coverage) · **I.6** (fugitive fuels).
 """
