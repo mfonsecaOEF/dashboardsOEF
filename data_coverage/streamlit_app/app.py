@@ -536,37 +536,76 @@ def page_overview(
                     "Priority": u["priority"],
                     "Country": u["country"],
                     "ISO3": u["iso3"],
-                    "Program approach (metrics)": u["program_approach"],
-                    "Program approach (qualitative)": u["qual_program_approach"],
+                    "Automatic checklist view": u["program_approach"],
+                    "Research judgment": u["qual_program_approach"],
                     "What to plan for": u["approach_note"],
-                    "Combined qual. score": u["combined_score"].round(0).astype(int),
-                    "Viable (GPC ticket)": u["viable_ticket"].map({1: "Yes", 0: "No"}),
-                    "Mit coverage": u["mit_coverage_pct"].map(_pct_label),
-                    "Mit years": u["mit_year_pct"].map(_pct_label),
-                    "Mit T1+T2": u["mit_t1_t2_pct"].map(_pct_label),
-                    "Mit city-ready cells": u["mit_city_ready_pct"].map(_pct_label),
-                    "Mit approach (metrics)": u["mit_approach"],
-                    "Mit qual. score": u["mit_qual_score"].astype(int),
-                    "Adp coverage": u["adp_coverage_pct"].map(_pct_label),
-                    "Adp years": u["adp_year_pct"].map(_pct_label),
-                    "Adp T1+T2": u["adp_t1_t2_pct"].map(_pct_label),
-                    "Adp city-ready cells": u["adp_city_ready_pct"].map(_pct_label),
-                    "Adp approach (metrics)": u["adp_approach"],
-                    "Adp qual. score": u["adp_qual_score"].astype(int),
-                    "Delta (adapt − mit qual.)": u["delta"].astype(int),
-                    "What the delta means": u["delta_meaning"],
+                    "Research score (0–100)": u["combined_score"].round(0).astype(int),
+                    "Meets GPC data bar?": u["viable_ticket"].map({1: "Yes", 0: "No"}),
+                    "Mitigation: % checklist filled": u["mit_coverage_pct"].map(_pct_label),
+                    "Mitigation: % years covered": u["mit_year_pct"].map(_pct_label),
+                    "Mitigation: % good/global sources": u["mit_t1_t2_pct"].map(_pct_label),
+                    "Mitigation: % city-scale grain": u["mit_city_ready_pct"].map(_pct_label),
+                    "Mitigation checklist view": u["mit_approach"],
+                    "Mitigation research score": u["mit_qual_score"].astype(int),
+                    "Adaptation: % checklist filled": u["adp_coverage_pct"].map(_pct_label),
+                    "Adaptation: % years covered": u["adp_year_pct"].map(_pct_label),
+                    "Adaptation: % good/global sources": u["adp_t1_t2_pct"].map(_pct_label),
+                    "Adaptation: % city-scale grain": u["adp_city_ready_pct"].map(_pct_label),
+                    "Adaptation checklist view": u["adp_approach"],
+                    "Adaptation research score": u["adp_qual_score"].astype(int),
+                    "Score gap (adapt − mit)": u["delta"].astype(int),
+                    "What the score gap means": u["delta_meaning"],
                 }
             )
             st.dataframe(show, use_container_width=True, hide_index=True, height=420)
 
             diverge = u[u["program_approach"] != u["qual_program_approach"]]
-            if len(diverge):
-                names = ", ".join(f"{r.iso3} ({r.program_approach} vs {r.qual_program_approach})" for r in diverge.itertuples())
-                st.info(
-                    f"**Metrics vs qualitative diverge** for: {names}. "
-                    "Metrics reward checklist breadth / years / T1–T2 (incl. global fills); "
-                    "qualitative scores penalize thin city-product stacks. Use both."
+            with st.expander(
+                "Why do some countries show two different program approaches?",
+                expanded=bool(len(diverge)),
+            ):
+                st.markdown(
+                    """
+We show **two answers** on purpose — they measure different things:
+
+| Column in the table | Plain meaning | Looks better when… |
+|---|---|---|
+| **Automatic checklist view** | “Did we find *some* public dataset for most checklist items?” | Global datasets fill many boxes (even if not city-precise) |
+| **Research judgment** | “Would we recommend this for a real city rollout?” | Local / official city-scale data is strong |
+
+**How to use them**
+- Both **City-ready** → best case for a scale-style program.
+- Checklist view **easier** than research (e.g. Ethiopia) → data exists, but plan for lower city precision.
+- Research **easier** than checklist view (e.g. UK) → strong city story; automatic year rules may be under-counting.
+- For **which program to design**, prefer **Research judgment**. For **coverage math / ticket scoring**, use the checklist metrics.
+"""
                 )
+                if len(diverge):
+                    st.markdown("**Countries where the two labels disagree right now:**")
+                    diverge_show = pd.DataFrame(
+                        {
+                            "Country": diverge["country"],
+                            "ISO3": diverge["iso3"],
+                            "Automatic checklist view": diverge["program_approach"],
+                            "Research judgment": diverge["qual_program_approach"],
+                            "In one sentence": diverge.apply(
+                                lambda r: (
+                                    "Checklist looks full (often via global data), but city-product quality looks weak."
+                                    if APPROACH_ORDER.get(r["program_approach"], 9)
+                                    < APPROACH_ORDER.get(r["qual_program_approach"], 9)
+                                    else "City-product research looks stronger than the automatic coverage/year rules."
+                                ),
+                                axis=1,
+                            ),
+                        }
+                    )
+                    st.dataframe(
+                        diverge_show.reset_index(drop=True),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.success("For the current filter, both methods agree on program approach.")
     else:
         st.warning(
             "Unified metrics file missing — showing qualitative-only view. "
@@ -627,31 +666,40 @@ def page_overview(
 
     st.markdown(
         """
-**How to read this (strategic, not gatekeeping)**
+**How to read this table**
 
-Every country can host a program. Use **two layers**:
+Think of each country as: *“Can we run a CityCatalyst-style program — and what kind?”*  
+Not: *“Is this country a hard no?”*
 
-| Layer | Source | What it answers |
-|---|---|---|
-| **Quantitative metrics** | `comparison_unified/` ← `coverage_metrics_spec.md` | Checklist **coverage %**, **years 2015–2024**, **T1/T2/T3**, viability bands |
-| **Qualitative scores** | Research synthesis (0–100) | City-product usability / program design judgment |
+**The three program labels**
 
-| Program approach | Meaning |
+| Label | Meaning in plain language |
 |---|---|
-| **City-ready** | Scale-friendly public stack (metrics: high coverage + years + T1/T2; qual: ≈80–100) |
-| **Extra work** | Feasible with partners / fills / some downscaling |
-| **Accept downscaling** | Still doable — accept lower city precision (population/national→city or modeled fills) |
+| **City-ready** | Public data is strong enough for a city-scale program with limited caveats |
+| **Extra work** | Doable, but plan for partners, missing sectors, and some downscaling |
+| **Accept downscaling** | Still doable — you must accept coarser / national→city or modeled data (lower precision) |
 
-| Key metric columns | Meaning |
+**Two columns that look similar**
+
+| Column | Ask yourself |
 |---|---|
-| **Coverage** | Share of GPC (23) or CCRA (41) cells with a usable public dataset |
-| **Years** | Mean fraction of 2015–2024 evidenced on covered cells |
-| **T1+T2** | Share of covered cells whose best dataset is vetted/primary or global/modeled (not proxy-only) |
-| **City-ready cells** | Share of covered cells with city/screening-ready grain |
-| **Viable (GPC ticket)** | Mitigation band is scale-friendly under the metrics spec |
-| **Combined qual. score** | `(mitigation + adaptation) qualitative scores / 2` |
+| **Automatic checklist view** | “Did we tick most checklist boxes with *some* public source?” |
+| **Research judgment** | “Would we actually recommend this for a city rollout tomorrow?” |
 
-**Known hard gaps (all / most countries)**
+When they disagree, open the expander above — that is expected, not a bug.
+
+**Other useful columns**
+
+| Column | Plain meaning |
+|---|---|
+| **% checklist filled** | Share of GPC (23) or CCRA (41) items with at least one public dataset |
+| **% years covered** | Of those items, how much of 2015–2024 has data (rough read from metadata) |
+| **% good/global sources** | Share whose best source is official/vetted or global modeled (not a weak proxy) |
+| **% city-scale grain** | Share already at city / fine geography |
+| **Meets GPC data bar?** | “Yes” if mitigation clears the automatic emissions-coverage threshold |
+| **Research score (0–100)** | Average research judgment; higher ≈ easier city product |
+
+**Known hard gaps almost everywhere**
 - Adaptation: **CCRA-039** stormwater drainage *coverage*
 - Mitigation: **I.6** fugitive emissions from fuels
 """
