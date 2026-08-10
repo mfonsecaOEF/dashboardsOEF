@@ -15,6 +15,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent  # data_coverage/
 MIT = ROOT / "mitigation" / "comparison"
 ADP = ROOT / "adaptation" / "comparison"
+UNIFIED = ROOT / "comparison_unified"
 
 TIER_COLORS = {"A": "#0f6b5c", "B": "#9a6b12", "C": "#8a3a32"}
 
@@ -36,7 +37,12 @@ TIER_APPROACH_NOTE = {
     "C": "Still doable — plan for population/national downscaling and/or OEF modeled fills; accept lower city precision",
 }
 QUALITY_TO_TIER = {v: k for k, v in TIER_QUALITY.items()}
-APPROACH_ORDER = {"City-ready": 0, "Extra work": 1, "Accept downscaling": 2}
+APPROACH_ORDER = {
+    "City-ready": 0,
+    "Extra work": 1,
+    "Accept downscaling": 2,
+    "Insufficient": 3,
+}
 
 # Score bands used in the research synthesis (approximate)
 SCORE_BANDS = {
@@ -472,106 +478,178 @@ def render_country_detail(
     st.dataframe(t[show_t].reset_index(drop=True), use_container_width=True, hide_index=True, height=320)
 
 
-def page_overview(mit_sum: pd.DataFrame, adp_sum: pd.DataFrame) -> None:
+def _pct_label(x: float) -> str:
+    try:
+        return f"{float(x) * 100:.0f}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def page_overview(
+    mit_sum: pd.DataFrame,
+    adp_sum: pd.DataFrame,
+    unified: pd.DataFrame | None = None,
+) -> None:
     st.subheader("How should we approach each country?")
     st.caption(
         "Strategic view for CityCatalyst-style programs — not a yes/no gate. "
-        "All 9 countries can be engaged; the column tells you what kind of program to design. "
-        "Ordered from easier (city-ready) to more constrained (accept downscaling)."
+        "Combines **quantitative metrics** (coverage × years × quality tier) with "
+        "**qualitative research scores**. Ordered from easier to more constrained."
     )
     if mit_sum.empty or adp_sum.empty:
         st.info("No countries match the current filters.")
         return
 
-    m = mit_sum[["iso3", "country", "tier", "score"]].rename(
-        columns={"tier": "mitigation_tier", "score": "mitigation_score"}
-    )
-    a = adp_sum[["iso3", "tier", "score"]].rename(
-        columns={"tier": "adaptation_tier", "score": "adaptation_score"}
-    )
-    both = m.merge(a, on="iso3")
-    both["priority_score"] = (
-        both["mitigation_score"] + both["adaptation_score"]
-    ) / 2.0
-    both["delta"] = both["adaptation_score"] - both["mitigation_score"]
-    both["mitigation_quality"] = both["mitigation_tier"].map(tier_quality)
-    both["adaptation_quality"] = both["adaptation_tier"].map(tier_quality)
-    both["mitigation_approach"] = both["mitigation_tier"].map(tier_approach)
-    both["adaptation_approach"] = both["adaptation_tier"].map(tier_approach)
-    both["program_approach"] = [
-        combined_approach(mt, at)
-        for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
-    ]
-    both["approach_note"] = [
-        tier_approach_note(worst_tier(mt, at))
-        for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
-    ]
-    both["delta_meaning"] = both["delta"].map(delta_meaning)
-    both["_ord"] = both["program_approach"].map(APPROACH_ORDER)
-    both = both.sort_values(["_ord", "priority_score"], ascending=[True, False]).reset_index(drop=True)
-    both.insert(0, "priority", both.index + 1)
+    selected = set(mit_sum["iso3"]).intersection(set(adp_sum["iso3"]))
 
-    show = both[
-        [
-            "priority",
-            "country",
-            "iso3",
-            "program_approach",
-            "approach_note",
-            "priority_score",
-            "adaptation_score",
-            "adaptation_approach",
-            "adaptation_quality",
-            "mitigation_score",
-            "mitigation_approach",
-            "mitigation_quality",
-            "delta",
-            "delta_meaning",
+    # --- Quantitative layer (comparison_unified) ---
+    if unified is not None and not unified.empty:
+        u = unified[unified["iso3"].isin(selected)].copy()
+        if u.empty:
+            st.warning("No unified metrics rows for the current country filter.")
+        else:
+            u["_ord"] = u["program_approach"].map(APPROACH_ORDER).fillna(9)
+            u = u.sort_values(["_ord", "combined_score"], ascending=[True, False]).reset_index(
+                drop=True
+            )
+            u.insert(0, "priority", u.index + 1)
+
+            # Qualitative approach from research tiers (for comparison)
+            mit_t = mit_sum.set_index("iso3")["tier"]
+            adp_t = adp_sum.set_index("iso3")["tier"]
+            u["qual_mit_approach"] = u["iso3"].map(mit_t).map(tier_approach)
+            u["qual_adp_approach"] = u["iso3"].map(adp_t).map(tier_approach)
+            u["qual_program_approach"] = [
+                combined_approach(m, a)
+                for m, a in zip(u["iso3"].map(mit_t), u["iso3"].map(adp_t))
+            ]
+            u["approach_note"] = u["qual_program_approach"].map(
+                lambda ap: tier_approach_note(
+                    {"City-ready": "A", "Extra work": "B", "Accept downscaling": "C"}.get(ap, "C")
+                )
+            )
+            u["delta_meaning"] = u["delta"].map(delta_meaning)
+
+            st.markdown("#### Decision table (quantitative + qualitative)")
+            show = pd.DataFrame(
+                {
+                    "Priority": u["priority"],
+                    "Country": u["country"],
+                    "ISO3": u["iso3"],
+                    "Program approach (metrics)": u["program_approach"],
+                    "Program approach (qualitative)": u["qual_program_approach"],
+                    "What to plan for": u["approach_note"],
+                    "Combined qual. score": u["combined_score"].round(0).astype(int),
+                    "Viable (GPC ticket)": u["viable_ticket"].map({1: "Yes", 0: "No"}),
+                    "Mit coverage": u["mit_coverage_pct"].map(_pct_label),
+                    "Mit years": u["mit_year_pct"].map(_pct_label),
+                    "Mit T1+T2": u["mit_t1_t2_pct"].map(_pct_label),
+                    "Mit city-ready cells": u["mit_city_ready_pct"].map(_pct_label),
+                    "Mit approach (metrics)": u["mit_approach"],
+                    "Mit qual. score": u["mit_qual_score"].astype(int),
+                    "Adp coverage": u["adp_coverage_pct"].map(_pct_label),
+                    "Adp years": u["adp_year_pct"].map(_pct_label),
+                    "Adp T1+T2": u["adp_t1_t2_pct"].map(_pct_label),
+                    "Adp city-ready cells": u["adp_city_ready_pct"].map(_pct_label),
+                    "Adp approach (metrics)": u["adp_approach"],
+                    "Adp qual. score": u["adp_qual_score"].astype(int),
+                    "Delta (adapt − mit qual.)": u["delta"].astype(int),
+                    "What the delta means": u["delta_meaning"],
+                }
+            )
+            st.dataframe(show, use_container_width=True, hide_index=True, height=420)
+
+            diverge = u[u["program_approach"] != u["qual_program_approach"]]
+            if len(diverge):
+                names = ", ".join(f"{r.iso3} ({r.program_approach} vs {r.qual_program_approach})" for r in diverge.itertuples())
+                st.info(
+                    f"**Metrics vs qualitative diverge** for: {names}. "
+                    "Metrics reward checklist breadth / years / T1–T2 (incl. global fills); "
+                    "qualitative scores penalize thin city-product stacks. Use both."
+                )
+    else:
+        st.warning(
+            "Unified metrics file missing — showing qualitative-only view. "
+            "Expected `comparison_unified/coverage_country_summary.csv`."
+        )
+        # fallback qualitative-only (previous behavior)
+        m = mit_sum[["iso3", "country", "tier", "score"]].rename(
+            columns={"tier": "mitigation_tier", "score": "mitigation_score"}
+        )
+        a = adp_sum[["iso3", "tier", "score"]].rename(
+            columns={"tier": "adaptation_tier", "score": "adaptation_score"}
+        )
+        both = m.merge(a, on="iso3")
+        both["priority_score"] = (both["mitigation_score"] + both["adaptation_score"]) / 2.0
+        both["delta"] = both["adaptation_score"] - both["mitigation_score"]
+        both["program_approach"] = [
+            combined_approach(mt, at)
+            for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
         ]
-    ].copy()
-    show["priority_score"] = show["priority_score"].round(0).astype(int)
-    show["delta"] = show["delta"].astype(int)
-    show = show.rename(
-        columns={
-            "priority": "Priority",
-            "country": "Country",
-            "iso3": "ISO3",
-            "program_approach": "Program approach",
-            "approach_note": "What to plan for",
-            "priority_score": "Combined score",
-            "adaptation_score": "Adaptation score",
-            "adaptation_approach": "Adaptation approach",
-            "adaptation_quality": "Adaptation data",
-            "mitigation_score": "Mitigation score",
-            "mitigation_approach": "Mitigation approach",
-            "mitigation_quality": "Mitigation data",
-            "delta": "Delta (adapt − mit)",
-            "delta_meaning": "What the delta means",
-        }
-    )
-    st.dataframe(show, use_container_width=True, hide_index=True, height=420)
+        both["approach_note"] = [
+            tier_approach_note(worst_tier(mt, at))
+            for mt, at in zip(both["mitigation_tier"], both["adaptation_tier"])
+        ]
+        both["_ord"] = both["program_approach"].map(APPROACH_ORDER)
+        both = both.sort_values(["_ord", "priority_score"], ascending=[True, False]).reset_index(
+            drop=True
+        )
+        both.insert(0, "priority", both.index + 1)
+        show = both[
+            [
+                "priority",
+                "country",
+                "iso3",
+                "program_approach",
+                "approach_note",
+                "priority_score",
+                "adaptation_score",
+                "mitigation_score",
+                "delta",
+            ]
+        ].copy()
+        show["priority_score"] = show["priority_score"].round(0).astype(int)
+        show["delta"] = show["delta"].astype(int)
+        show = show.rename(
+            columns={
+                "priority": "Priority",
+                "country": "Country",
+                "iso3": "ISO3",
+                "program_approach": "Program approach (qualitative)",
+                "approach_note": "What to plan for",
+                "priority_score": "Combined score",
+                "adaptation_score": "Adaptation score",
+                "mitigation_score": "Mitigation score",
+                "delta": "Delta (adapt − mit)",
+            }
+        )
+        st.dataframe(show, use_container_width=True, hide_index=True, height=420)
 
     st.markdown(
         """
 **How to read this (strategic, not gatekeeping)**
 
-Every country here can host a program. The question is **what type of program** the public data can support.
+Every country can host a program. Use **two layers**:
 
-| Program approach | Meaning | Typical score band |
+| Layer | Source | What it answers |
 |---|---|---|
-| **City-ready** | Public city-scale stack is strong — closer to a Brazil-style scale program | ≈80–100 (Strong data) |
-| **Extra work** | Feasible pilot / phased rollout — need partners, sector fills, some downscaling | ≈60–79 (Limited data) |
-| **Accept downscaling** | Still doable (e.g. Morocco-style) — plan for population/national→city downscaling and/or OEF modeled fills; **accept lower city precision** | ≈0–59 (Sparse open data) |
+| **Quantitative metrics** | `comparison_unified/` ← `coverage_metrics_spec.md` | Checklist **coverage %**, **years 2015–2024**, **T1/T2/T3**, viability bands |
+| **Qualitative scores** | Research synthesis (0–100) | City-product usability / program design judgment |
 
-| Other columns | Meaning |
+| Program approach | Meaning |
 |---|---|
-| **Combined score** | `(mitigation + adaptation) / 2` — higher = easier within the same approach band |
-| **Delta (adapt − mit)** | Which track is stronger: ≈0 (±10) balanced · ≥+10 CCRA-first · ≤−10 GPC-first |
-| **What to plan for** | Short qualitative design note for program scoping |
+| **City-ready** | Scale-friendly public stack (metrics: high coverage + years + T1/T2; qual: ≈80–100) |
+| **Extra work** | Feasible with partners / fills / some downscaling |
+| **Accept downscaling** | Still doable — accept lower city precision (population/national→city or modeled fills) |
 
-**Tracks**
-- **Mitigation** = public data for city GPC GHG inventories (23 subsectors)
-- **Adaptation** = public data for city CCRA indicators (41 H×E×V indicators)
+| Key metric columns | Meaning |
+|---|---|
+| **Coverage** | Share of GPC (23) or CCRA (41) cells with a usable public dataset |
+| **Years** | Mean fraction of 2015–2024 evidenced on covered cells |
+| **T1+T2** | Share of covered cells whose best dataset is vetted/primary or global/modeled (not proxy-only) |
+| **City-ready cells** | Share of covered cells with city/screening-ready grain |
+| **Viable (GPC ticket)** | Mitigation band is scale-friendly under the metrics spec |
+| **Combined qual. score** | `(mitigation + adaptation) qualitative scores / 2` |
 
 **Known hard gaps (all / most countries)**
 - Adaptation: **CCRA-039** stormwater drainage *coverage*
@@ -635,18 +713,29 @@ Within a band, higher scores mean stronger city-ready coverage, fewer hard gaps,
 
 #### What *is* calculated in this app
 
+**Qualitative (research scores)**
+
 | Metric | Formula |
 |---|---|
-| **Combined score** | `(mitigation_score + adaptation_score) / 2` |
+| **Combined qual. score** | `(mitigation_score + adaptation_score) / 2` |
 | **Delta** | `adaptation_score − mitigation_score` |
-| **Program approach (per track)** | Strong→City-ready · Limited→Extra work · Sparse→Accept downscaling |
-| **Program approach (overview)** | Takes the **more constrained** of the two tracks (C beats B beats A) |
-| **Priority order** | Sort by approach (City-ready → Extra work → Accept downscaling), then by Combined score descending |
+| **Program approach (qualitative)** | Strong→City-ready · Limited→Extra work · Sparse→Accept downscaling; worse track wins |
+
+**Quantitative (`comparison_unified/`, see `coverage_metrics_spec.md`)**
+
+| Metric | Formula |
+|---|---|
+| **Coverage %** | covered checklist cells / N (23 GPC or 41 CCRA) |
+| **Years %** | mean(years in 2015–2024 / 10) on covered cells |
+| **T1+T2 %** | share of covered cells with best tier T1 or T2 |
+| **Program approach (metrics)** | thresholds on coverage × years × T1+T2; worse track wins |
+| **Viable (GPC ticket)** | mitigation band = scale-friendly |
 
 #### Caveats
 
 - Dataset **counts** in the matrices are not quality-weighted.
-- Scores can be **recalibrated** with product if CityCatalyst priorities change.
+- Metrics can look strong when **global modeled** fills dominate; qualitative scores capture city-product thinness.
+- Year % is best-effort from `temporal_coverage` text in research CSVs.
 - Data approach is necessary but **not sufficient** for a full Brazil-style program (partnerships, methodology localization, financing pathway still matter).
 """
     )
@@ -697,6 +786,9 @@ def main() -> None:
         st.error(f"Missing comparison CSV: {e}")
         st.stop()
 
+    unified_path = UNIFIED / "coverage_country_summary.csv"
+    unified = load_csv(str(unified_path)) if unified_path.exists() else None
+
     country_options = (
         mit_sum[["iso3", "country"]]
         .drop_duplicates()
@@ -745,8 +837,9 @@ def main() -> None:
             help="Choose one or more countries. Combines with the data-quality filter.",
         )
         st.divider()
-        st.caption("Data from `data_coverage/{mitigation,adaptation}/comparison/`")
-        st.caption("Updated with country research packages (9 ISO3).")
+        st.caption("Qualitative: `data_coverage/{mitigation,adaptation}/comparison/`")
+        st.caption("Quantitative: `data_coverage/comparison_unified/`")
+        st.caption("9 ISO3 research packages.")
 
     if not qualities:
         st.warning("Select at least one data-quality band.")
@@ -775,7 +868,7 @@ def main() -> None:
         st.stop()
 
     if view == "Overview":
-        page_overview(mit_sum_f, adp_sum_f)
+        page_overview(mit_sum_f, adp_sum_f, unified)
     elif view == "Mitigation (GPC)":
         tab1, tab2, tab3 = st.tabs(["Leaderboard", "Sector matrix", "Country detail"])
         with tab1:
