@@ -1,7 +1,7 @@
 # Philippines GPC coverage assessment
 
 Checklist = 23 subsectors in `GPC_Data_Availability_Framework.xlsx`.  
-Catalogue = `01_datasets_PHL.csv` (PHL-001 … PHL-024).
+Catalogue = `01_datasets_PHL.csv` (PHL-001 … PHL-024; PHL-015 removed — guidance, not a dataset).
 
 ---
 
@@ -11,13 +11,13 @@ Catalogue = `01_datasets_PHL.csv` (PHL-001 … PHL-024).
 
 | Need | Finding |
 |---|---|
-| Residential electricity | **Yes (national/regional).** DOE Power Statistics sales by sector & region (PHL-003); Meralco franchise volumes (PHL-006); FIES supporting (PHL-023). Open barangay/LGU automatic extracts: **Partial** (typically via LGU request to DU — documented in PHL-015). |
+| Residential electricity | **Yes (national/regional).** DOE Power Statistics sales by sector & region (PHL-003); Meralco franchise volumes (PHL-006); FIES supporting (PHL-023). Open barangay/LGU automatic extracts: **Partial** (typically via LGU request to the distribution utility). |
 | Residential fuels (LPG, kerosene, biomass) | **Partial.** DOE KES petroleum by sector (PHL-004). LGU fuel sales registers: **No suitable open dataset identified**. |
-| Emissions | BTR1 (PHL-001); Quezon City inventory (PHL-014); EDGAR/Climate TRACE (PHL-019/020). |
+| Emissions | BTR1 (PHL-001); Quezon City inventory (PHL-014); Climate TRACE alternative (PHL-020); EDGAR downscaling baseline only (PHL-019). |
 
 ### I.2 Commercial & institutional — **Partial (strong electricity)**
 
-DOE commercial sales (PHL-003); Meralco; CCC manual notes Makati collects fuel/electricity via business permits (PHL-015).  
+DOE commercial sales (PHL-003); Meralco. Some LGUs (e.g. Makati) collect fuel/electricity via business permits.  
 Open nationwide LGU commercial fuel registry: **No suitable dataset identified**.
 
 ### I.3 Manufacturing industries & construction — **Partial**
@@ -59,7 +59,7 @@ Open distribution leakage/network attributes: **No suitable dataset identified**
 | Fleet | LTO registration by type/region/fuel (PHL-007) — **Yes**. |
 | Fuel sales | National petroleum by sector (PHL-004). Municipal pump sales: **No suitable dataset identified**. |
 | VKT | **No suitable national open VKT panel identified.** |
-| Emissions | BTR1 transport; Quezon City GPC; EDGAR/Climate TRACE. |
+| Emissions | BTR1 transport; Quezon City GPC; Climate TRACE alternative; EDGAR downscaling baseline only. |
 
 ### II.2 Railways — **Partial**
 
@@ -101,7 +101,7 @@ Open activity dataset: **No suitable dataset identified** (BTR1 Potential only).
 
 ### III.4 Wastewater — **Partial**
 
-MWSS concessionaire reports for Metro Manila (PHL-024); CCC LGU datasheets (PHL-015); BTR1.  
+MWSS concessionaire reports for Metro Manila (PHL-024); BTR1.  
 Open BOD/COD dashboards nationwide: **No suitable dataset identified**.
 
 ---
@@ -178,4 +178,4 @@ Supporting: FIES (PHL-023).
 
 ## Cross-cutting verdict
 
-The Philippines offers **above-average open national electricity and energy statistics**, **strong port/airport activity data**, **institutionalized national GHG inventories (EO 174 / BTR1)**, and a **working LGU inventory guidance system** with at least one published city result (Quezon City). Remaining city bottlenecks: **VKT**, **open LGU fuel sales**, **systematic landfill tonnage APIs**, and **F-gas stocks**.
+The Philippines offers **above-average open national electricity and energy statistics**, **strong port/airport activity data**, **institutionalized national GHG inventories (EO 174 / BTR1)**, and at least one published city result (Quezon City). Remaining city bottlenecks: **VKT**, **open LGU fuel sales**, **systematic landfill tonnage APIs**, and **F-gas stocks**.

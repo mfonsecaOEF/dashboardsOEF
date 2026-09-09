@@ -24,7 +24,7 @@
 | Waste / water | NSWMC, DENR-EMB, LGU SWM offices, MWSS concessionaires |
 | Industry / IPPU | DENR-EMB (inventory lead), CeMAP/DTI |
 | AFOLU | PSA agriculture; DA; NAMRIA; DENR-FMB |
-| City GHG | LGU LCCAP inventories (e.g. Quezon City); CCC community inventory manual |
+| City GHG | LGU LCCAP inventories (e.g. Quezon City) |
 
 ## Structural notes
 
@@ -32,4 +32,5 @@
 2. **EO 174 / PGHGIMRS** assigns clear agency leads (DOE energy, DOTr transport, DENR waste/IPPU/forestry, DA+PSA agriculture).
 3. **LGU community GHG inventories** are encouraged via LCCAP; utilities often provide electricity by sector **on request** (Makati/Quezon City practice documented).
 4. **Ports and airports** have relatively mature public activity statistics.
-5. Binding city gaps remain **VKT**, **LGU fuel sales**, and **systematic open landfill tonnage APIs**.
+5. **EDGAR is a downscaling baseline only, not a primary source** (OEF–C40/GCOM workshop, 14 Aug 2026): city/national coefficients to downscale national UNFCCC inventories for cities without local data, with methodological limitations acknowledged.
+6. Binding city gaps remain **VKT**, **LGU fuel sales**, and **systematic open landfill tonnage APIs**.
